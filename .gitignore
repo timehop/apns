@@ -21,3 +21,11 @@ _testmain.go
 
 *.exe
 *.test
+
+# Example keys
+example/*.key
+example/*.crt
+
+# Ginkgo files
+*.coverprofile
+coverage.html
