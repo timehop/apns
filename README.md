@@ -1,5 +1,8 @@
 # apns
 
+[![GoDoc](https://godoc.org/github.com/timehop/apns?status.svg)](https://godoc.org/github.com/timehop/apns)
+[![Build Status](https://travis-ci.org/timehop/apns.svg?branch=master)](https://travis-ci.org/timehop/apns)
+
 A Go package to interface with the Apple Push Notification Service
 
 ## Install
