@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 )
@@ -52,7 +53,8 @@ type APS struct {
 }
 
 type Payload struct {
-	APS APS `json:"aps"`
+	APS          APS
+	customValues map[string]interface{}
 }
 
 type Notification struct {
@@ -61,7 +63,31 @@ type Notification struct {
 	Identifier  uint32
 	Expiration  *time.Time
 	Priority    int
-	Payload     Payload
+	Payload     *Payload
+}
+
+func NewNotification() Notification {
+	return Notification{Payload: newPayload()}
+}
+
+func newPayload() *Payload {
+	return &Payload{customValues: map[string]interface{}{}}
+}
+
+func (p *Payload) SetCustomValue(key string, value interface{}) error {
+	if key == "aps" {
+		return errors.New("cannot assign a custom APS value in payload")
+	}
+
+	p.customValues[key] = value
+
+	return nil
+}
+
+func (p *Payload) MarshalJSON() ([]byte, error) {
+	p.customValues["aps"] = p.APS
+
+	return json.Marshal(p.customValues)
 }
 
 func (n Notification) ToBinary() ([]byte, error) {

@@ -81,10 +81,43 @@ var _ = Describe("Notifications", func() {
 		})
 	})
 
+	Describe("Payload", func() {
+		Describe("#MarshalJSON", func() {
+			Context("with only APS", func() {
+				It("should marshal APS", func() {
+					n := apns.NewNotification()
+					p := n.Payload
+
+					p.APS.Alert.Body = "testing"
+
+					b, err := json.Marshal(p)
+
+					Expect(err).To(BeNil())
+					Expect(b).To(Equal([]byte("{\"aps\":{\"alert\":{\"body\":\"testing\"}}}")))
+				})
+			})
+
+			Context("with custom attributes APS", func() {
+				It("should marshal APS", func() {
+					n := apns.NewNotification()
+					p := n.Payload
+
+					p.APS.Alert.Body = "testing"
+					p.SetCustomValue("email", "come@me.bro")
+
+					b, err := json.Marshal(p)
+
+					Expect(err).To(BeNil())
+					Expect(b).To(Equal([]byte("{\"aps\":{\"alert\":{\"body\":\"testing\"}},\"email\":\"come@me.bro\"}")))
+				})
+			})
+		})
+	})
+
 	Describe("Notification", func() {
 		Describe("#ToBinary", func() {
 			Context("invalid token format", func() {
-				n := apns.Notification{}
+				n := apns.NewNotification()
 				n.DeviceToken = "totally not a valid token"
 
 				It("should return an error", func() {
@@ -98,7 +131,7 @@ var _ = Describe("Notifications", func() {
 				It("should generate the correct byte payload with expiry", func() {
 					t := time.Unix(1404102833, 0)
 
-					n := apns.Notification{}
+					n := apns.NewNotification()
 					n.Identifier = uint32(123123)
 					n.DeviceToken = "9999999999999999999999999999999999999999999999999999999999999999"
 					n.Priority = apns.PriorityImmediate
@@ -119,7 +152,7 @@ var _ = Describe("Notifications", func() {
 				})
 
 				It("should generate the correct byte payload", func() {
-					n := apns.Notification{}
+					n := apns.NewNotification()
 					n.Identifier = uint32(123123)
 					n.DeviceToken = "9999999999999999999999999999999999999999999999999999999999999999"
 					n.Priority = apns.PriorityImmediate
