@@ -15,16 +15,15 @@ go get github.com/timehop/apns
 ```go
 c, _ := apns.NewClient(apns.ProductionGateway, apnsCert, apnsKey)
 
-p := apns.Payload{}
+p := apns.NewPayload()
 p.APS.Alert.Body = "I am a push notification!"
 p.APS.Badge = 5
 p.APS.Sound = "turn_down_for_what.aiff"
 
-m := apns.Notification{
-	Payload:     p,
-	DeviceToken: "A_DEVICE_TOKEN",
-	Priority:    apns.PriorityImmediate,
-}
+m := apns.NewNotification()
+m.Payload = p
+m.DeviceToken = "A_DEVICE_TOKEN"
+m.Priority = apns.PriorityImmediate
 
 c.Send(m)
 ```
@@ -43,7 +42,7 @@ go func() {
 	}
 }()
 
-p := apns.Payload{}
+p := apns.NewPayload()
 p.APS.Alert.Body = "I am a push notification!"
 p.APS.Badge = 5
 p.APS.Sound = "turn_down_for_what.aiff"
@@ -52,13 +51,12 @@ p.APS.ContentAvailable = 1
 p.SetCustomValue("link", "zombo://dot/com")
 p.SetCustomValue("game", map[string]int{"score": 234})
 
-m := apns.Notification{
-	Payload:     p,
-	DeviceToken: "A_DEVICE_TOKEN",
-	Priority:    apns.PriorityImmediate,
-	Identifier: 12312, // Integer for APNS
-	ID: "user_id:timestamp", // ID not sent to Apple – to identify error notifications
-}
+m := apns.NewNotification()
+m.Payload = p
+m.DeviceToken = "A_DEVICE_TOKEN"
+m.Priority = apns.PriorityImmediate
+m.Identifier = 12312, // Integer for APNS
+m.ID = "user_id:timestamp", // ID not sent to Apple – to identify error notifications
 
 c.Send(m)
 ```

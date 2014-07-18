@@ -67,10 +67,10 @@ type Notification struct {
 }
 
 func NewNotification() Notification {
-	return Notification{Payload: newPayload()}
+	return Notification{Payload: NewPayload()}
 }
 
-func newPayload() *Payload {
+func NewPayload() *Payload {
 	return &Payload{customValues: map[string]interface{}{}}
 }
 

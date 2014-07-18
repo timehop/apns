@@ -85,8 +85,7 @@ var _ = Describe("Notifications", func() {
 		Describe("#MarshalJSON", func() {
 			Context("with only APS", func() {
 				It("should marshal APS", func() {
-					n := apns.NewNotification()
-					p := n.Payload
+					p := apns.NewPayload()
 
 					p.APS.Alert.Body = "testing"
 
@@ -99,8 +98,7 @@ var _ = Describe("Notifications", func() {
 
 			Context("with custom attributes APS", func() {
 				It("should marshal APS", func() {
-					n := apns.NewNotification()
-					p := n.Payload
+					p := apns.NewPayload()
 
 					p.APS.Alert.Body = "testing"
 					p.SetCustomValue("email", "come@me.bro")

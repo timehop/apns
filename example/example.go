@@ -26,16 +26,18 @@ func main() {
 			continue
 		}
 
-		p := apns.Payload{}
+		p := apns.NewPayload()
 		p.APS.Alert.Body = body
 		p.APS.Badge = badge
 
-		m := apns.Notification{
-			Payload:     p,
-			DeviceToken: tok,
-			Priority:    apns.PriorityImmediate,
-			Identifier:  uint32(i),
-		}
+		p.SetCustomValue("link", "yourapp://precache/20140718")
+
+		m := apns.NewNotification()
+		m.Payload = p
+		m.DeviceToken = tok
+		m.Priority = apns.PriorityImmediate
+		m.Identifier = uint32(i)
+
 		c.Send(m)
 
 		i++
