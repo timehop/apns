@@ -49,6 +49,9 @@ p.APS.Badge = 5
 p.APS.Sound = "turn_down_for_what.aiff"
 p.APS.ContentAvailable = 1
 
+p.SetCustomValue("link", "zombo://dot/com")
+p.SetCustomValue("game", map[string]int{"score": 234})
+
 m := apns.Notification{
 	Payload:     p,
 	DeviceToken: "A_DEVICE_TOKEN",
