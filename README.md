@@ -66,7 +66,7 @@ c.Send(m)
 ```go
 f, err := apns.NewFeedback(s.Address(), DummyCert, DummyKey)
 if err != nil {
-	log.Fatal("Could not create feedback", err.Error()
+	log.Fatal("Could not create feedback", err.Error())
 }
 
 for ft := range f.Receive() {
