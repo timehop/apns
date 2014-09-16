@@ -3,6 +3,7 @@ package apns
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/hex"
 	"time"
 )
 
@@ -17,17 +18,22 @@ type FeedbackTuple struct {
 }
 
 func feedbackTupleFromBytes(b []byte) FeedbackTuple {
-	var ts uint32
-	var tokLen uint16
-	tok := make([]byte, 32)
-
 	r := bytes.NewReader(b)
 
+	var ts uint32
 	binary.Read(r, binary.BigEndian, &ts)
+
+	var tokLen uint16
 	binary.Read(r, binary.BigEndian, &tokLen)
+
+	tok := make([]byte, tokLen)
 	binary.Read(r, binary.BigEndian, &tok)
 
-	return FeedbackTuple{Timestamp: time.Unix(int64(ts), 0), TokenLength: tokLen, DeviceToken: string(tok)}
+	return FeedbackTuple{
+		Timestamp:   time.Unix(int64(ts), 0),
+		TokenLength: tokLen,
+		DeviceToken: hex.EncodeToString(tok),
+	}
 }
 
 func NewFeedback(gw string, cert string, key string) (Feedback, error) {
