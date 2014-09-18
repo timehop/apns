@@ -2,6 +2,7 @@ package apns
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/binary"
 	"encoding/hex"
 	"time"
@@ -34,6 +35,12 @@ func feedbackTupleFromBytes(b []byte) FeedbackTuple {
 		TokenLength: tokLen,
 		DeviceToken: hex.EncodeToString(tok),
 	}
+}
+
+func NewFeedbackWithCert(gw string, cert tls.Certificate) Feedback {
+	conn := NewConnWithCert(gw, cert)
+
+	return Feedback{Conn: &conn}
 }
 
 func NewFeedback(gw string, cert string, key string) (Feedback, error) {

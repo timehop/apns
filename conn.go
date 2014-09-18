@@ -23,14 +23,14 @@ type Conn struct {
 	connected bool
 }
 
-func newConnWithCert(gw string, cert tls.Certificate) (Conn, error) {
+func NewConnWithCert(gw string, cert tls.Certificate) Conn {
 	gatewayParts := strings.Split(gw, ":")
 	conf := tls.Config{
 		Certificates: []tls.Certificate{cert},
 		ServerName:   gatewayParts[0],
 	}
 
-	return Conn{gateway: gw, Conf: &conf}, nil
+	return Conn{gateway: gw, Conf: &conf}
 }
 
 // NewConnWithFiles creates a new Conn from certificate and key in the specified files
@@ -40,7 +40,7 @@ func NewConn(gw string, crt string, key string) (Conn, error) {
 		return Conn{}, err
 	}
 
-	return newConnWithCert(gw, cert)
+	return NewConnWithCert(gw, cert), nil
 }
 
 // NewConnWithFiles creates a new Conn from certificate and key in the specified files
@@ -50,7 +50,7 @@ func NewConnWithFiles(gw string, certFile string, keyFile string) (Conn, error) 
 		return Conn{}, err
 	}
 
-	return newConnWithCert(gw, cert)
+	return NewConnWithCert(gw, cert), nil
 }
 
 // Connect actually creates the TLS connection

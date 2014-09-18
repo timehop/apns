@@ -2,6 +2,7 @@ package apns
 
 import (
 	"container/list"
+	"crypto/tls"
 	"io"
 	"log"
 	"time"
@@ -34,7 +35,7 @@ type Client struct {
 	id     uint32
 }
 
-func newClientWithConn(gw string, conn Conn) (Client, error) {
+func newClientWithConn(gw string, conn Conn) Client {
 	c := Client{
 		Conn:         &conn,
 		FailedNotifs: make(chan NotificationResult),
@@ -44,7 +45,13 @@ func newClientWithConn(gw string, conn Conn) (Client, error) {
 
 	go c.runLoop()
 
-	return c, nil
+	return c
+}
+
+func NewClientWithCert(gw string, cert tls.Certificate) Client {
+	conn := NewConnWithCert(gw, cert)
+
+	return newClientWithConn(gw, conn)
 }
 
 func NewClient(gw string, cert string, key string) (Client, error) {
@@ -53,7 +60,7 @@ func NewClient(gw string, cert string, key string) (Client, error) {
 		return Client{}, err
 	}
 
-	return newClientWithConn(gw, conn)
+	return newClientWithConn(gw, conn), nil
 }
 
 func NewClientWithFiles(gw string, certFile string, keyFile string) (Client, error) {
@@ -62,7 +69,7 @@ func NewClientWithFiles(gw string, certFile string, keyFile string) (Client, err
 		return Client{}, err
 	}
 
-	return newClientWithConn(gw, conn)
+	return newClientWithConn(gw, conn), nil
 }
 
 func (c *Client) Send(n Notification) error {
