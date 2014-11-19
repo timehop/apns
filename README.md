@@ -91,7 +91,7 @@ We use [Ginkgo](https://onsi.github.io/ginkgo) for our testing framework and
 [Gomega](http://onsi.github.io/gomega/) for our matchers. To run the tests:
 
 ```
-go get github.com/onsi/ginkgo
+go get github.com/onsi/ginkgo/ginkgo
 go get github.com/onsi/gomega
 ginkgo -randomizeAllSpecs
 ```
