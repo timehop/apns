@@ -39,6 +39,8 @@ type NotificationResult struct {
 
 type Alert struct {
 	Body         string   `json:"body,omitempty"`
+	Title        string   `json:"title,omitempty"`
+	Action       string   `json:"action,omitempty"`
 	LocKey       string   `json:"loc-key,omitempty"`
 	LocArgs      []string `json:"loc-args,omitempty"`
 	ActionLocKey string   `json:"action-loc-key,omitempty"`
@@ -46,14 +48,17 @@ type Alert struct {
 }
 
 type APS struct {
-	Alert            Alert  `json:"alert,omitempty"`
-	Badge            *int   `json:"badge,omitempty"`
-	Sound            string `json:"sound,omitempty"`
-	ContentAvailable int    `json:"content-available,omitempty"`
+	Alert            Alert    `json:"alert,omitempty"`
+	Badge            *int     `json:"badge,omitempty"`
+	Sound            string   `json:"sound,omitempty"`
+	ContentAvailable int      `json:"content-available,omitempty"`
+	URLArgs          []string `json:"url-args,omitempty"`
 }
 
 type Payload struct {
-	APS          APS
+	APS APS
+	// MDM for mobile device management
+	MDM          string
 	customValues map[string]interface{}
 }
 
@@ -85,7 +90,11 @@ func (p *Payload) SetCustomValue(key string, value interface{}) error {
 }
 
 func (p *Payload) MarshalJSON() ([]byte, error) {
-	p.customValues["aps"] = p.APS
+	if len(p.MDM) != 0 {
+		p.customValues["mdm"] = p.MDM
+	} else {
+		p.customValues["aps"] = p.APS
+	}
 
 	return json.Marshal(p.customValues)
 }
