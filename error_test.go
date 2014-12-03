@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"math/rand"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/timehop/apns"
@@ -82,14 +83,18 @@ var _ = Describe("Error", func() {
 		})
 
 		Context("not enough bytes", func() {
-			e := apns.NewError([]byte{})
-			Expect(e).NotTo(BeNil())
-			Expect(e.ErrStr).To(Equal(apns.ErrUnknown))
+			It("should be ErrUnknown", func() {
+				e := apns.NewError([]byte{})
+				Expect(e).NotTo(BeNil())
+				Expect(e.ErrStr).To(Equal(apns.ErrUnknown))
+			})
 		})
 	})
 
 	Describe("#Error", func() {
-		e := apns.Error{ErrStr: "this is an error string"}
-		Expect(e.Error()).To(Equal("this is an error string"))
+		It("should have an error string", func() {
+			e := apns.Error{ErrStr: "this is an error string"}
+			Expect(e.Error()).To(Equal("this is an error string"))
+		})
 	})
 })
