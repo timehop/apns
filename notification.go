@@ -45,8 +45,12 @@ type Alert struct {
 	LaunchImage  string   `json:"launch-image,omitempty"`
 }
 
+func (a *Alert) isZero() bool {
+	return len(a.Body)+len(a.LocKey)+len(a.LocArgs)+len(a.ActionLocKey)+len(a.LaunchImage) == 0
+}
+
 type APS struct {
-	Alert            Alert  `json:"alert,omitempty"`
+	Alert            *Alert `json:"alert,omitempty"`
 	Badge            *int   `json:"badge,omitempty"`
 	Sound            string `json:"sound,omitempty"`
 	ContentAvailable int    `json:"content-available,omitempty"`
@@ -71,7 +75,10 @@ func NewNotification() Notification {
 }
 
 func NewPayload() *Payload {
-	return &Payload{customValues: map[string]interface{}{}}
+	return &Payload{
+		customValues: map[string]interface{}{},
+		APS:          APS{Alert: &Alert{}},
+	}
 }
 
 func (p *Payload) SetCustomValue(key string, value interface{}) error {
@@ -85,6 +92,10 @@ func (p *Payload) SetCustomValue(key string, value interface{}) error {
 }
 
 func (p *Payload) MarshalJSON() ([]byte, error) {
+	// If all fields of Alert are empty, don't send alert:{}.
+	if p.APS.Alert != nil && p.APS.Alert.isZero() {
+		p.APS.Alert = nil
+	}
 	p.customValues["aps"] = p.APS
 
 	return json.Marshal(p.customValues)
