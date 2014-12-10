@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/timehop/apns"
@@ -20,7 +21,7 @@ var _ = Describe("Notifications", func() {
 					j, err := json.Marshal(a)
 
 					Expect(err).To(BeNil())
-					Expect(j).To(Equal([]byte("{\"body\":\"whatup\"}")))
+					Expect(j).To(Equal([]byte(`{"body":"whatup"}`)))
 				})
 			})
 
@@ -31,7 +32,7 @@ var _ = Describe("Notifications", func() {
 					j, err := json.Marshal(a)
 
 					Expect(err).To(BeNil())
-					Expect(j).To(Equal([]byte("{\"loc-key\":\"localization\"}")))
+					Expect(j).To(Equal([]byte(`{"loc-key":"localization"}`)))
 				})
 			})
 
@@ -42,7 +43,7 @@ var _ = Describe("Notifications", func() {
 					j, err := json.Marshal(a)
 
 					Expect(err).To(BeNil())
-					Expect(j).To(Equal([]byte("{\"loc-args\":[\"world\",\"cup\"]}")))
+					Expect(j).To(Equal([]byte(`{"loc-args":["world","cup"]}`)))
 				})
 			})
 
@@ -53,7 +54,7 @@ var _ = Describe("Notifications", func() {
 					j, err := json.Marshal(a)
 
 					Expect(err).To(BeNil())
-					Expect(j).To(Equal([]byte("{\"action-loc-key\":\"akshun localization\"}")))
+					Expect(j).To(Equal([]byte(`{"action-loc-key":"akshun localization"}`)))
 				})
 			})
 
@@ -64,7 +65,7 @@ var _ = Describe("Notifications", func() {
 					j, err := json.Marshal(a)
 
 					Expect(err).To(BeNil())
-					Expect(j).To(Equal([]byte("{\"launch-image\":\"dee fault\"}")))
+					Expect(j).To(Equal([]byte(`{"launch-image":"dee fault"}`)))
 				})
 			})
 
@@ -75,7 +76,7 @@ var _ = Describe("Notifications", func() {
 					j, err := json.Marshal(a)
 
 					Expect(err).To(BeNil())
-					Expect(j).To(Equal([]byte("{\"body\":\"USA scores!\",\"loc-key\":\"game\",\"loc-args\":[\"USA\",\"BRA\"],\"launch-image\":\"scoreboard\"}")))
+					Expect(j).To(Equal([]byte(`{"body":"USA scores!","loc-key":"game","loc-args":["USA","BRA"],"launch-image":"scoreboard"}`)))
 				})
 			})
 		})
@@ -92,7 +93,7 @@ var _ = Describe("Notifications", func() {
 					b, err := json.Marshal(p)
 
 					Expect(err).To(BeNil())
-					Expect(b).To(Equal([]byte("{\"aps\":{\"alert\":{\"body\":\"testing\"}}}")))
+					Expect(b).To(Equal([]byte(`{"aps":{"alert":{"body":"testing"}}}`)))
 				})
 			})
 
@@ -106,7 +107,7 @@ var _ = Describe("Notifications", func() {
 					b, err := json.Marshal(p)
 
 					Expect(err).To(BeNil())
-					Expect(b).To(Equal([]byte("{\"aps\":{\"alert\":{\"body\":\"testing\"}},\"email\":\"come@me.bro\"}")))
+					Expect(b).To(Equal([]byte(`{"aps":{"alert":{"body":"testing"}},"email":"come@me.bro"}`)))
 				})
 			})
 		})
