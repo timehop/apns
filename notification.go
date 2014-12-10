@@ -47,7 +47,7 @@ type Alert struct {
 
 type APS struct {
 	Alert            Alert  `json:"alert,omitempty"`
-	Badge            int    `json:"badge,omitempty"`
+	Badge            *int   `json:"badge,omitempty"`
 	Sound            string `json:"sound,omitempty"`
 	ContentAvailable int    `json:"content-available,omitempty"`
 }

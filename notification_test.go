@@ -113,6 +113,30 @@ var _ = Describe("Notifications", func() {
 		})
 	})
 
+	Describe("APS", func() {
+		Context("badge with a zero (clears notifications)", func() {
+			It("should contain zero", func() {
+				zero := 0
+				a := apns.APS{Badge: &zero}
+
+				j, err := json.Marshal(a)
+
+				Expect(err).To(BeNil())
+				Expect(j).To(Equal([]byte(`{"alert":{},"badge":0}`)))
+			})
+		})
+		Context("no badge specified (do nothing)", func() {
+			It("should omit the badge field", func() {
+				a := apns.APS{}
+
+				j, err := json.Marshal(a)
+
+				Expect(err).To(BeNil())
+				Expect(j).To(Equal([]byte(`{"alert":{}}`)))
+			})
+		})
+	})
+
 	Describe("Notification", func() {
 		Describe("#ToBinary", func() {
 			Context("invalid token format", func() {
