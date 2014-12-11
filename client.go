@@ -31,6 +31,7 @@ func (b *buffer) Add(v interface{}) *list.Element {
 type serializedNotif struct {
 	id uint32
 	b  []byte
+	n  *Notification
 }
 
 type Client struct {
@@ -94,7 +95,7 @@ func (c *Client) Send(n Notification) error {
 		return err
 	}
 
-	c.notifs <- serializedNotif{b: b, id: n.Identifier}
+	c.notifs <- serializedNotif{b: b, id: n.Identifier, n: &n}
 	return nil
 }
 
@@ -113,14 +114,9 @@ func (c *Client) nextID() uint32 {
 	return c.id
 }
 
-func (c *Client) reportFailedPush(v interface{}, err *Error) {
-	failedNotif, ok := v.(Notification)
-	if !ok || v == nil {
-		return
-	}
-
+func (c *Client) reportFailedPush(s serializedNotif, err *Error) {
 	select {
-	case c.FailedNotifs <- NotificationResult{Notif: failedNotif, Err: *err}:
+	case c.FailedNotifs <- NotificationResult{Notif: s.n, Err: *err}:
 	default:
 	}
 }
@@ -144,7 +140,7 @@ func (c *Client) handleError(err *Error, buffer *buffer) *list.Element {
 
 		// If the notification, move cursor after the trouble notification
 		if n.id == err.Identifier {
-			go c.reportFailedPush(cursor.Value, err)
+			go c.reportFailedPush(n, err)
 
 			next := cursor.Next()
 
