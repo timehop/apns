@@ -37,7 +37,7 @@ const (
 )
 
 type NotificationResult struct {
-	Notif *Notification
+	Notif Notification
 	Err   Error
 }
 

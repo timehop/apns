@@ -116,7 +116,7 @@ func (c *Client) nextID() uint32 {
 
 func (c *Client) reportFailedPush(s serializedNotif, err *Error) {
 	select {
-	case c.FailedNotifs <- NotificationResult{Notif: s.n, Err: *err}:
+	case c.FailedNotifs <- NotificationResult{Notif: *s.n, Err: *err}:
 	default:
 	}
 }
