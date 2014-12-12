@@ -50,10 +50,29 @@ func (a *Alert) isZero() bool {
 }
 
 type APS struct {
-	Alert            *Alert `json:"alert,omitempty"`
-	Badge            *int   `json:"badge,omitempty"`
-	Sound            string `json:"sound,omitempty"`
-	ContentAvailable int    `json:"content-available,omitempty"`
+	Alert            Alert
+	Badge            *int
+	Sound            string
+	ContentAvailable int
+}
+
+func (aps APS) MarshalJSON() ([]byte, error) {
+	data := make(map[string]interface{})
+
+	if !aps.Alert.isZero() {
+		data["alert"] = aps.Alert
+	}
+	if aps.Badge != nil {
+		data["badge"] = aps.Badge
+	}
+	if aps.Sound != "" {
+		data["sound"] = aps.Sound
+	}
+	if aps.ContentAvailable != 0 {
+		data["content-available"] = aps.ContentAvailable
+	}
+
+	return json.Marshal(data)
 }
 
 type Payload struct {
@@ -75,10 +94,7 @@ func NewNotification() Notification {
 }
 
 func NewPayload() *Payload {
-	return &Payload{
-		customValues: map[string]interface{}{},
-		APS:          APS{Alert: &Alert{}},
-	}
+	return &Payload{customValues: map[string]interface{}{}}
 }
 
 func (p *Payload) SetCustomValue(key string, value interface{}) error {
@@ -92,10 +108,6 @@ func (p *Payload) SetCustomValue(key string, value interface{}) error {
 }
 
 func (p *Payload) MarshalJSON() ([]byte, error) {
-	// If all fields of Alert are empty, don't send alert:{}.
-	if p.APS.Alert != nil && p.APS.Alert.isZero() {
-		p.APS.Alert = nil
-	}
 	p.customValues["aps"] = p.APS
 
 	return json.Marshal(p.customValues)
