@@ -61,6 +61,8 @@ func NewFeedbackWithFiles(gw string, certFile string, keyFile string) (Feedback,
 	return Feedback{Conn: &conn}, nil
 }
 
+// Receive returns a read only channel for APNs feedback. The returned channel
+// will close when there is no more data to be read.
 func (f Feedback) Receive() <-chan FeedbackTuple {
 	fc := make(chan FeedbackTuple)
 	go f.receive(fc)
