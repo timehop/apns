@@ -38,6 +38,7 @@ type NotificationResult struct {
 }
 
 type Alert struct {
+	// Do not add fields without updating the implemenation of isZero.
 	Body         string   `json:"body,omitempty"`
 	LocKey       string   `json:"loc-key,omitempty"`
 	LocArgs      []string `json:"loc-args,omitempty"`
