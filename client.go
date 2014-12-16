@@ -4,7 +4,6 @@ import (
 	"container/list"
 	"crypto/tls"
 	"io"
-	"log"
 	"sync"
 )
 
@@ -39,6 +38,9 @@ type Client struct {
 
 	notifs chan serialized
 
+	buffer *buffer
+	cursor *list.Element
+
 	id  uint32
 	idm sync.Mutex
 
@@ -51,7 +53,9 @@ func newClientWithConn(gw string, conn Conn) Client {
 		Conn:         &conn,
 		FailedNotifs: make(chan NotificationResult),
 		notifs:       make(chan serialized),
-		id:           1,
+		buffer:       newBuffer(50),
+		cursor:       nil,
+		id:           0,
 		idm:          sync.Mutex{},
 		connected:    false,
 		connm:        sync.Mutex{},
@@ -85,12 +89,20 @@ func NewClientWithFiles(gw string, certFile string, keyFile string) (Client, err
 }
 
 func (c *Client) Connect() error {
-	err := c.Conn.Connect()
-	if err != nil {
+	if err := c.Conn.Connect(); err != nil {
 		return err
 	}
 
-	go c.runLoop()
+	// On connect, requeue any notifications that were
+	// sent after the error & disconnect.
+	// http://redth.codes/the-problem-with-apples-push-notification-ser/
+	if err := c.requeue(); err != nil {
+		return err
+	}
+
+	// Kick off asynchronous error reading
+	go c.readErrors()
+
 	return nil
 }
 
@@ -100,162 +112,89 @@ func (c *Client) Send(n Notification) error {
 	}
 
 	// Set identifier if not specified
-	if n.Identifier == 0 {
-		n.Identifier = c.nextID()
-	} else if c.id < n.Identifier {
-		c.setID(n.Identifier)
-	}
+	n.Identifier = c.determineIdentifier(n.Identifier)
 
 	b, err := n.ToBinary()
 	if err != nil {
 		return err
 	}
 
-	c.notifs <- serialized{b: b, id: n.Identifier, n: &n}
+	// Add to list
+	c.cursor = c.buffer.Add(n)
+
+	_, err = c.Conn.Write(b)
+	if err == io.EOF {
+		c.connected = false
+		return err
+	}
+
+	if err != nil {
+		return err
+	}
+
+	c.cursor = c.cursor.Next()
 	return nil
 }
 
-func (c *Client) setID(n uint32) {
+func (c *Client) determineIdentifier(n uint32) uint32 {
 	c.idm.Lock()
 	defer c.idm.Unlock()
 
-	c.id = n
-}
+	// If the id passed in is 0, that means it wasn't
+	// set so get the next ID. Otherwise, set it to that
+	// identifier.
+	if n == 0 {
+		c.id++
+	} else {
+		c.id = n
+	}
 
-func (c *Client) nextID() uint32 {
-	c.idm.Lock()
-	defer c.idm.Unlock()
-
-	c.id++
 	return c.id
 }
 
-func (c *Client) connected() {
-	c.connm.Lock()
-	defer c.connm.Unlock()
-
-	c.connected = true
-}
-
-func (c *Client) disconnected() {
-	c.connm.Lock()
-	defer c.connm.Unlock()
-
-	c.connected = false
-}
-
-func (c *Client) reportFailedPush(s serialized, err *Error) {
-	select {
-	case c.FailedNotifs <- NotificationResult{Notif: *s.n, Err: *err}:
-	default:
-	}
-}
-
-func (c *Client) requeue(cursor *list.Element) {
+func (c *Client) requeue() error {
 	// If `cursor` is not nil, this means there are notifications that
 	// need to be delivered (or redelivered)
-	for ; cursor != nil; cursor = cursor.Next() {
-		if n, ok := cursor.Value.(serialized); ok {
-			go func() { c.notifs <- n }()
+	for ; c.cursor != nil; c.cursor = c.cursor.Next() {
+		if s, ok := c.cursor.Value.(serialized); ok {
+			if err := c.Send(*s.n); err != nil {
+				return err
+			}
 		}
 	}
+
+	return nil
 }
 
-func (c *Client) handleError(err *Error, buffer *buffer) *list.Element {
-	cursor := buffer.Back()
+func (c *Client) readErrors() {
+	p := make([]byte, 6, 6)
+
+	_, err := c.Conn.Read(p)
+	// TODO(bw) not sure what to do here. It's unclear what errors
+	// come out of this and how we handle it.
+	if err != nil {
+		return
+	}
+
+	e := NewError(p)
+	cursor := c.buffer.Back()
 
 	for cursor != nil {
 		// Get serialized notification
-		n, _ := cursor.Value.(serialized)
+		s, _ := cursor.Value.(serialized)
 
 		// If the notification, move cursor after the trouble notification
-		if n.id == err.Identifier {
-			go c.reportFailedPush(n, err)
+		if s.id == e.Identifier {
+			// Try to write - skip if no one is reading on the other side
+			select {
+			case c.FailedNotifs <- NotificationResult{Notif: *s.n, Err: e}:
+			default:
+			}
 
-			next := cursor.Next()
-
-			buffer.Remove(cursor)
-			return next
+			c.cursor = cursor.Next()
+			c.buffer.Remove(cursor)
 		}
 
 		cursor = cursor.Prev()
 	}
-
-	return cursor
-}
-
-func (c *Client) runLoop() {
-	sent := newBuffer(50)
-	cursor := sent.Front()
-
-	// APNS connection
-	for {
-		// Start reading errors from APNS
-		errs := readErrs(c.Conn)
-
-		c.requeue(cursor)
-
-		// Connection open, listen for notifs and errors
-		for {
-			var err error
-			var n serialized
-
-			// Check for notifications or errors. There is a chance we'll send notifications
-			// if we already have an error since `select` will "pseudorandomly" choose a
-			// ready channels. It turns out to be fine because the connection will already
-			// be closed and it'll requeue. We could check before we get to this select
-			// block, but it doesn't seem worth the extra code and complexity.
-			select {
-			case err = <-errs:
-			case n = <-c.notifs:
-			}
-
-			// If there is an error we understand, find the notification that failed,
-			// move the cursor right after it.
-			if nErr, ok := err.(*Error); ok {
-				cursor = c.handleError(nErr, sent)
-				break
-			}
-
-			if err != nil {
-				break
-			}
-
-			// Add to list
-			cursor = sent.Add(n)
-
-			_, err = c.Conn.Write(n.b)
-
-			if err == io.EOF {
-				log.Println("EOF trying to write notification")
-				c.connected = false
-				return
-			}
-
-			if err != nil {
-				log.Println("err writing to apns", err.Error())
-				break
-			}
-
-			cursor = cursor.Next()
-		}
-	}
-}
-
-func readErrs(c *Conn) chan error {
-	errs := make(chan error)
-
-	go func() {
-		p := make([]byte, 6, 6)
-		_, err := c.Read(p)
-		if err != nil {
-			errs <- err
-			return
-		}
-
-		e := NewError(p)
-		errs <- &e
-	}()
-
-	return errs
 }
