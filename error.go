@@ -6,7 +6,7 @@ import (
 	"errors"
 )
 
-const (
+var (
 	ErrDisconnected = errors.New("disconnected from gateway")
 )
 
