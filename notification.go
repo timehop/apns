@@ -38,7 +38,7 @@ type NotificationResult struct {
 }
 
 type Alert struct {
-	// Do not add fields without updating the implemenation of isZero.
+	// Do not add fields without updating the implementation of isZero.
 	Body         string   `json:"body,omitempty"`
 	LocKey       string   `json:"loc-key,omitempty"`
 	LocArgs      []string `json:"loc-args,omitempty"`
@@ -47,12 +47,12 @@ type Alert struct {
 }
 
 func (a *Alert) isZero() bool {
-	return len(a.Body)+len(a.LocKey)+len(a.LocArgs)+len(a.ActionLocKey)+len(a.LaunchImage) == 0
+	return len(a.Body) == 0 && len(a.LocKey) == 0 && len(a.LocArgs) == 0 && len(a.ActionLocKey) == 0 && len(a.LaunchImage) == 0
 }
 
 type APS struct {
 	Alert            Alert
-	Badge            *int
+	Badge            *int // 0 to clear notifications, nil to leave as is.
 	Sound            string
 	ContentAvailable int
 }
@@ -81,6 +81,22 @@ type Payload struct {
 	customValues map[string]interface{}
 }
 
+func (p *Payload) MarshalJSON() ([]byte, error) {
+	p.customValues["aps"] = p.APS
+
+	return json.Marshal(p.customValues)
+}
+
+func (p *Payload) SetCustomValue(key string, value interface{}) error {
+	if key == "aps" {
+		return errors.New("cannot assign a custom APS value in payload")
+	}
+
+	p.customValues[key] = value
+
+	return nil
+}
+
 type Notification struct {
 	ID          string
 	DeviceToken string
@@ -96,22 +112,6 @@ func NewNotification() Notification {
 
 func NewPayload() *Payload {
 	return &Payload{customValues: map[string]interface{}{}}
-}
-
-func (p *Payload) SetCustomValue(key string, value interface{}) error {
-	if key == "aps" {
-		return errors.New("cannot assign a custom APS value in payload")
-	}
-
-	p.customValues[key] = value
-
-	return nil
-}
-
-func (p *Payload) MarshalJSON() ([]byte, error) {
-	p.customValues["aps"] = p.APS
-
-	return json.Marshal(p.customValues)
 }
 
 func (n Notification) ToBinary() ([]byte, error) {
