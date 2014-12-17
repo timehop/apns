@@ -55,6 +55,7 @@ type APS struct {
 	Badge            *int // 0 to clear notifications, nil to leave as is.
 	Sound            string
 	ContentAvailable int
+	Category         string // requires iOS 8+
 }
 
 func (aps APS) MarshalJSON() ([]byte, error) {
@@ -71,6 +72,9 @@ func (aps APS) MarshalJSON() ([]byte, error) {
 	}
 	if aps.ContentAvailable != 0 {
 		data["content-available"] = aps.ContentAvailable
+	}
+	if aps.Category != "" {
+		data["category"] = aps.Category
 	}
 
 	return json.Marshal(data)
