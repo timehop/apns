@@ -85,6 +85,10 @@ for ft := range f.Receive() {
 }
 ```
 
+Note that the channel returned from `Receive` will close after the
+[feedback service](https://developer.apple.com/library/ios/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/Chapters/CommunicatingWIthAPS.html#//apple_ref/doc/uid/TP40008194-CH101-SW3)
+has no more data to send.
+
 ## Running the tests
 
 We use [Ginkgo](https://onsi.github.io/ginkgo) for our testing framework and

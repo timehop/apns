@@ -104,6 +104,25 @@ var _ = Describe("Notifications", func() {
 
 	Describe("Payload", func() {
 		Describe("#MarshalJSON", func() {
+			Context("no alert (as with Passbook)", func() {
+				It("should not contain the alert struct", func() {
+					p := apns.NewPayload()
+					b, err := json.Marshal(p)
+
+					Expect(err).To(BeNil())
+					Expect(b).To(Equal([]byte(`{"aps":{}}`)))
+				})
+			})
+			Context("no alert with content available (as with Newsstand)", func() {
+				It("should not contain the alert struct", func() {
+					p := apns.NewPayload()
+					p.APS.ContentAvailable = 1
+					b, err := json.Marshal(p)
+
+					Expect(err).To(BeNil())
+					Expect(b).To(Equal([]byte(`{"aps":{"content-available":1}}`)))
+				})
+			})
 			Context("with only APS", func() {
 				It("should marshal APS", func() {
 					p := apns.NewPayload()
@@ -155,7 +174,7 @@ var _ = Describe("Notifications", func() {
 				j, err := json.Marshal(a)
 
 				Expect(err).To(BeNil())
-				Expect(j).To(Equal([]byte(`{"alert":{},"badge":0}`)))
+				Expect(j).To(Equal([]byte(`{"badge":0}`)))
 			})
 		})
 		Context("no badge specified (do nothing)", func() {
@@ -165,7 +184,7 @@ var _ = Describe("Notifications", func() {
 				j, err := json.Marshal(a)
 
 				Expect(err).To(BeNil())
-				Expect(j).To(Equal([]byte(`{"alert":{}}`)))
+				Expect(j).To(Equal([]byte(`{}`)))
 			})
 		})
 	})
@@ -223,7 +242,7 @@ var _ = Describe("Notifications", func() {
 					var frameLen, identifier, expiry uint32
 					var priority byte
 					var tok [32]byte
-					var payload [20]byte
+					var payload [10]byte
 
 					binary.Read(buf, binary.BigEndian, &command)
 					binary.Read(buf, binary.BigEndian, &frameLen)
@@ -254,7 +273,7 @@ var _ = Describe("Notifications", func() {
 					binary.Read(buf, binary.BigEndian, &priority)
 
 					Expect(command).To(Equal(uint8(2)))
-					Expect(frameLen).To(Equal(uint32(76)))
+					Expect(frameLen).To(Equal(uint32(66)))
 
 					// Token
 					Expect(tokID).To(Equal(uint8(1)))
@@ -263,8 +282,8 @@ var _ = Describe("Notifications", func() {
 
 					// Payload
 					Expect(payloadID).To(Equal(uint8(2)))
-					Expect(payloadLen).To(Equal(uint16(20)))
-					Expect(payload).To(Equal([20]byte{123, 34, 97, 112, 115, 34, 58, 123, 34, 97, 108, 101, 114, 116, 34, 58, 123, 125, 125, 125}))
+					Expect(payloadLen).To(Equal(uint16(10)))
+					Expect(payload).To(Equal([10]byte{123, 34, 97, 112, 115, 34, 58, 123, 125, 125}))
 
 					// Identifier
 					Expect(identifierID).To(Equal(uint8(3)))
