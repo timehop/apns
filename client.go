@@ -106,6 +106,17 @@ func (c *Client) Connect() error {
 	return nil
 }
 
+func (c *Client) disconnect() error {
+	c.connm.Lock()
+	defer c.connm.Unlock()
+
+	if c.Conn == nil {
+		return nil
+	}
+
+	return c.Conn.Close()
+}
+
 func (c *Client) Send(n Notification) error {
 	if !c.connected {
 		return ErrDisconnected
@@ -122,7 +133,14 @@ func (c *Client) Send(n Notification) error {
 	// Add to list
 	c.cursor = c.buffer.Add(n)
 
-	_, err = c.Conn.Write(b)
+	return c.send(b)
+}
+
+func (c *Client) send(b []byte) error {
+	c.connm.Lock()
+	defer c.connm.Unlock()
+
+	_, err := c.Conn.Write(b)
 	if err == io.EOF {
 		c.connected = false
 		return err
@@ -178,6 +196,8 @@ func (c *Client) readErrors() {
 
 	e := NewError(p)
 	cursor := c.buffer.Back()
+
+	c.disconnect()
 
 	for cursor != nil {
 		// Get serialized notification
