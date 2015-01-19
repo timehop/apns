@@ -38,6 +38,7 @@ type NotificationResult struct {
 }
 
 type Alert struct {
+	// Do not add fields without updating the implementation of isZero.
 	Body         string   `json:"body,omitempty"`
 	LocKey       string   `json:"loc-key,omitempty"`
 	LocArgs      []string `json:"loc-args,omitempty"`
@@ -45,17 +46,59 @@ type Alert struct {
 	LaunchImage  string   `json:"launch-image,omitempty"`
 }
 
+func (a *Alert) isZero() bool {
+	return len(a.Body) == 0 && len(a.LocKey) == 0 && len(a.LocArgs) == 0 && len(a.ActionLocKey) == 0 && len(a.LaunchImage) == 0
+}
+
 type APS struct {
-	Alert            Alert  `json:"alert,omitempty"`
-	Badge            *int   `json:"badge,omitempty"`
-	Sound            string `json:"sound,omitempty"`
-	ContentAvailable int    `json:"content-available,omitempty"`
-	Category         string `json:"category,omitempty"`
+	Alert            Alert
+	Badge            *int // 0 to clear notifications, nil to leave as is.
+	Sound            string
+	ContentAvailable int
+	Category         string // requires iOS 8+
+}
+
+func (aps APS) MarshalJSON() ([]byte, error) {
+	data := make(map[string]interface{})
+
+	if !aps.Alert.isZero() {
+		data["alert"] = aps.Alert
+	}
+	if aps.Badge != nil {
+		data["badge"] = aps.Badge
+	}
+	if aps.Sound != "" {
+		data["sound"] = aps.Sound
+	}
+	if aps.ContentAvailable != 0 {
+		data["content-available"] = aps.ContentAvailable
+	}
+	if aps.Category != "" {
+		data["category"] = aps.Category
+	}
+
+	return json.Marshal(data)
 }
 
 type Payload struct {
 	APS          APS
 	customValues map[string]interface{}
+}
+
+func (p *Payload) MarshalJSON() ([]byte, error) {
+	p.customValues["aps"] = p.APS
+
+	return json.Marshal(p.customValues)
+}
+
+func (p *Payload) SetCustomValue(key string, value interface{}) error {
+	if key == "aps" {
+		return errors.New("cannot assign a custom APS value in payload")
+	}
+
+	p.customValues[key] = value
+
+	return nil
 }
 
 type Notification struct {
@@ -73,22 +116,6 @@ func NewNotification() Notification {
 
 func NewPayload() *Payload {
 	return &Payload{customValues: map[string]interface{}{}}
-}
-
-func (p *Payload) SetCustomValue(key string, value interface{}) error {
-	if key == "aps" {
-		return errors.New("cannot assign a custom APS value in payload")
-	}
-
-	p.customValues[key] = value
-
-	return nil
-}
-
-func (p *Payload) MarshalJSON() ([]byte, error) {
-	p.customValues["aps"] = p.APS
-
-	return json.Marshal(p.customValues)
 }
 
 func (n Notification) ToBinary() ([]byte, error) {
