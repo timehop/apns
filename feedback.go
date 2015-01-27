@@ -9,7 +9,7 @@ import (
 )
 
 type Feedback struct {
-	Conn *Conn
+	Conn Conn
 }
 
 type FeedbackTuple struct {
@@ -40,7 +40,7 @@ func feedbackTupleFromBytes(b []byte) FeedbackTuple {
 func NewFeedbackWithCert(gw string, cert tls.Certificate) Feedback {
 	conn := NewConnWithCert(gw, cert)
 
-	return Feedback{Conn: &conn}
+	return Feedback{Conn: conn}
 }
 
 func NewFeedback(gw string, cert string, key string) (Feedback, error) {
@@ -49,7 +49,7 @@ func NewFeedback(gw string, cert string, key string) (Feedback, error) {
 		return Feedback{}, err
 	}
 
-	return Feedback{Conn: &conn}, nil
+	return Feedback{Conn: conn}, nil
 }
 
 func NewFeedbackWithFiles(gw string, certFile string, keyFile string) (Feedback, error) {
@@ -58,7 +58,7 @@ func NewFeedbackWithFiles(gw string, certFile string, keyFile string) (Feedback,
 		return Feedback{}, err
 	}
 
-	return Feedback{Conn: &conn}, nil
+	return Feedback{Conn: conn}, nil
 }
 
 // Receive returns a read only channel for APNs feedback. The returned channel
@@ -80,9 +80,7 @@ func (f Feedback) receive(fc chan FeedbackTuple) {
 	for {
 		b := make([]byte, 38)
 
-		f.Conn.NetConn.SetReadDeadline(time.Now().Add(100 * time.Millisecond))
-
-		_, err := f.Conn.Read(b)
+		_, err := f.Conn.ReadWithTimeout(b, time.Now().Add(100*time.Millisecond))
 		if err != nil {
 			close(fc)
 			return

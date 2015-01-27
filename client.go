@@ -33,7 +33,7 @@ type serialized struct {
 }
 
 type Client struct {
-	Conn         *Conn
+	Conn         Conn
 	FailedNotifs chan NotificationResult
 
 	notifs chan serialized
@@ -50,7 +50,7 @@ type Client struct {
 
 func newClientWithConn(gw string, conn Conn) Client {
 	c := Client{
-		Conn:         &conn,
+		Conn:         conn,
 		FailedNotifs: make(chan NotificationResult),
 		notifs:       make(chan serialized),
 		buffer:       newBuffer(50),
