@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
@@ -136,8 +135,6 @@ var _ = Describe("Feedback", func() {
 		binary.Write(f2, binary.BigEndian, bt2)
 
 		binary.Write(f3, binary.BigEndian, uint32(1394352249))
-		fmt.Println("f3 bytes", f3)
-
 		binary.Write(f3, binary.BigEndian, uint16(len(bt3)))
 		binary.Write(f3, binary.BigEndian, bt3)
 
@@ -147,8 +144,9 @@ var _ = Describe("Feedback", func() {
 				c.Write(f2.Bytes())
 				c.Write(f3.Bytes())
 
-				// TODO(bw) figure out why we need this
+				// TODO(bw) this doesn't seem right
 				c.Write([]byte{0})
+
 				c.Close()
 			})
 			defer s.Close()
@@ -175,6 +173,6 @@ var _ = Describe("Feedback", func() {
 
 			<-c
 			close(d)
-		})
+		}, 10)
 	})
 })

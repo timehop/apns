@@ -129,72 +129,71 @@ var _ = Describe("Conn", func() {
 					Expect(err).To(BeNil())
 
 					close(d)
-				})
+				}, 10)
 			})
 		})
 	})
 
 	Describe("#Read", func() {
-		s := tcptest.NewTLSServer(func(c net.Conn) {
-			defer c.Close()
-			c.Write([]byte("hello!"))
-		})
-		defer s.Close()
-
-		conn, _ := apns.NewConn(s.Addr, string(tcptest.LocalhostCert), string(tcptest.LocalhostKey))
-		conn.Connect()
-
 		It("should read out 'hello!'", func() {
-			p := make([]byte, 6)
-			conn.Read(p)
-
-			Expect(p).To(Equal([]byte("hello!")))
-		})
-	})
-
-	Describe("#Write", func() {
-		It("should read out 'hello!'", func(d Done) {
 			s := tcptest.NewTLSServer(func(c net.Conn) {
 				defer c.Close()
-				c.Write([]byte{}) // Connect
-
-				b := make([]byte, 6)
-				c.Read(b)
-
-				Expect(string(b)).To(Equal("hello!"))
-				close(d)
+				c.Write([]byte("hello!"))
 			})
 			defer s.Close()
 
 			conn, _ := apns.NewConn(s.Addr, string(tcptest.LocalhostCert), string(tcptest.LocalhostKey))
 			conn.Connect()
 
-			conn.Write([]byte("hello!"))
+			p := make([]byte, 6)
+			conn.Read(p)
+
+			Expect(p).To(Equal([]byte("hello!")))
+		})
+	})
+})
+
+var _ = Describe("#Write", func() {
+	It("should read out 'hello!'", func(d Done) {
+		s := tcptest.NewTLSServer(func(c net.Conn) {
+			defer c.Close()
+			c.Write([]byte{}) // Connect
+
+			b := make([]byte, 6)
+			c.Read(b)
+
+			Expect(string(b)).To(Equal("hello!"))
+			close(d)
+		})
+
+		conn, _ := apns.NewConn(s.Addr, string(tcptest.LocalhostCert), string(tcptest.LocalhostKey))
+		conn.Connect()
+
+		conn.Write([]byte("hello!"))
+	}, 10)
+})
+
+var _ = Describe("#Close", func() {
+	Context("with connection", func() {
+		Context("no error", func() {
+			It("should return no error", func() {
+				s := tcptest.NewTLSServer(func(c net.Conn) {
+					defer c.Close()
+					c.Write([]byte{}) // Connect
+				})
+				defer s.Close()
+
+				conn, _ := apns.NewConn(s.Addr, string(tcptest.LocalhostCert), string(tcptest.LocalhostKey))
+				conn.Connect()
+				Expect(conn.Close()).To(BeNil())
+			})
 		})
 	})
 
-	Describe("#Close", func() {
-		Context("with connection", func() {
-			Context("no error", func() {
-				It("should return no error", func() {
-					s := tcptest.NewTLSServer(func(c net.Conn) {
-						defer c.Close()
-						c.Write([]byte{}) // Connect
-					})
-					defer s.Close()
-
-					conn, _ := apns.NewConn(s.Addr, string(tcptest.LocalhostCert), string(tcptest.LocalhostKey))
-					conn.Connect()
-					Expect(conn.Close()).To(BeNil())
-				})
-			})
-		})
-
-		Context("without connection", func() {
-			It("should not return an error", func() {
-				conn, _ := apns.NewConn("localhost:12345", string(tcptest.LocalhostCert), string(tcptest.LocalhostKey))
-				Expect(conn.Close()).To(BeNil())
-			})
+	Context("without connection", func() {
+		It("should not return an error", func() {
+			conn, _ := apns.NewConn("localhost:12345", string(tcptest.LocalhostCert), string(tcptest.LocalhostKey))
+			Expect(conn.Close()).To(BeNil())
 		})
 	})
 })

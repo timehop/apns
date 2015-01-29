@@ -89,16 +89,14 @@ func (c *conn) Close() error {
 
 // Read reads data from the connection
 func (c *conn) Read(p []byte) (int, error) {
-	i, err := c.netConn.Read(p)
-	return i, err
+	return c.netConn.Read(p)
 }
 
 // ReadWithTimeout reads data from the connection and returns an error
 // after duration
 func (c *conn) ReadWithTimeout(p []byte, deadline time.Time) (int, error) {
 	c.netConn.SetReadDeadline(deadline)
-	i, err := c.netConn.Read(p)
-	return i, err
+	return c.netConn.Read(p)
 }
 
 // Write writes data from the connection
