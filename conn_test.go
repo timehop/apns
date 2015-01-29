@@ -110,7 +110,7 @@ var _ = Describe("Conn", func() {
 					Expect(err).To(BeNil())
 
 					close(d)
-				})
+				}, 10)
 			})
 
 			Context("with existing connection", func() {
