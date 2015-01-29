@@ -8,7 +8,7 @@ before_script:
   - go get github.com/onsi/gomega
   - go get code.google.com/p/go.tools/cmd/cover
   - go install github.com/onsi/ginkgo/ginkgo
-script: ginkgo -r --skipMeasurements --cover --trace
+script: ginkgo -r --skipMeasurements --cover --trace --race
 env:
     global:
         - PATH=$HOME/gopath/bin:$PATH
