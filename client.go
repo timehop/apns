@@ -93,6 +93,8 @@ func (c *Client) Connect() error {
 		return err
 	}
 
+	c.setConnected(true)
+
 	// On connect, requeue any notifications that were
 	// sent after the error & disconnect.
 	// http://redth.codes/the-problem-with-apples-push-notification-ser/
@@ -217,4 +219,11 @@ func (c *Client) readErrors() {
 
 		cursor = cursor.Prev()
 	}
+}
+
+func (c *Client) setConnected(connected bool) {
+	c.connm.Lock()
+	defer c.connm.Unlock()
+
+	c.connected = true
 }
