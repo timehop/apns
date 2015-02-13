@@ -36,8 +36,6 @@ type Client struct {
 	Conn         Conn
 	FailedNotifs chan NotificationResult
 
-	notifs chan serialized
-
 	buffer *buffer
 	cursor *list.Element
 
@@ -52,7 +50,6 @@ func newClientWithConn(gw string, conn Conn) Client {
 	c := Client{
 		Conn:         conn,
 		FailedNotifs: make(chan NotificationResult),
-		notifs:       make(chan serialized),
 		buffer:       newBuffer(50),
 		cursor:       nil,
 		id:           0,
@@ -197,19 +194,19 @@ func (c *Client) readErrors() {
 	}
 
 	e := NewError(p)
-	cursor := c.buffer.Back()
-
 	c.disconnect()
+
+	cursor := c.buffer.Back()
 
 	for cursor != nil {
 		// Get serialized notification
-		s, _ := cursor.Value.(serialized)
+		n, _ := cursor.Value.(Notification)
 
 		// If the notification, move cursor after the trouble notification
-		if s.id == e.Identifier {
+		if n.Identifier == e.Identifier {
 			// Try to write - skip if no one is reading on the other side
 			select {
-			case c.FailedNotifs <- NotificationResult{Notif: *s.n, Err: e}:
+			case c.FailedNotifs <- NotificationResult{Notif: n, Err: e}:
 			default:
 			}
 
