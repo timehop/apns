@@ -83,6 +83,62 @@ var _ = Describe("Client", func() {
 		})
 	})
 
+	Describe("Reading Errors", func() {
+		Context("send a notification and get an error", func() {
+			It("should not return an error", func() {
+				s := tcptest.NewTLSServer(func(c net.Conn) {
+					c.Write([]byte("123456"))
+					c.Write([]byte{0})
+					c.Close()
+				})
+				defer s.Close()
+
+				c, err := apns.NewClient(s.Addr, string(tcptest.LocalhostCert), string(tcptest.LocalhostKey))
+				Expect(err).To(BeNil())
+
+				err = c.Connect()
+				Expect(err).To(BeNil())
+
+				err = c.Send(apns.Notification{Identifier: 859059510, DeviceToken: "0000000000000000000000000000000000000000000000000000000000000000"})
+				Expect(err).To(BeNil())
+
+				nr := <-c.FailedNotifs
+				Expect(nr.Err).NotTo(BeNil())
+				Expect(nr.Notif.Identifier).To(Equal(uint32(859059510)))
+			})
+		})
+
+		Context("send a multiple notifications and get an error", func() {
+			It("should not return an error", func() {
+				s := tcptest.NewTLSServer(func(c net.Conn) {
+					c.Write([]byte("123456"))
+					c.Write([]byte{0})
+					c.Close()
+				})
+				defer s.Close()
+
+				c, err := apns.NewClient(s.Addr, string(tcptest.LocalhostCert), string(tcptest.LocalhostKey))
+				Expect(err).To(BeNil())
+
+				err = c.Connect()
+				Expect(err).To(BeNil())
+
+				err = c.Send(apns.Notification{Identifier: 859059510, DeviceToken: "0000000000000000000000000000000000000000000000000000000000000000"})
+				Expect(err).To(BeNil())
+
+				err = c.Send(apns.Notification{Identifier: 159059510, DeviceToken: "0000000000000000000000000000000000000000000000000000000000000000"})
+				Expect(err).To(BeNil())
+
+				err = c.Send(apns.Notification{Identifier: 259059510, DeviceToken: "0000000000000000000000000000000000000000000000000000000000000000"})
+				Expect(err).To(BeNil())
+
+				nr := <-c.FailedNotifs
+				Expect(nr.Err).NotTo(BeNil())
+				Expect(nr.Notif.Identifier).To(Equal(uint32(859059510)))
+			})
+		})
+	})
+
 	Describe("Send", func() {
 		Context("valid push", func() {
 			It("should not return an error", func() {
@@ -104,7 +160,7 @@ var _ = Describe("Client", func() {
 		})
 
 		Context("invalid notification", func() {
-			It("should not return an error", func() {
+			It("should return an error", func() {
 				s := tcptest.NewTLSServer(func(c net.Conn) {
 					c.Write([]byte{0})
 					c.Close()
