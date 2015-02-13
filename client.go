@@ -93,7 +93,7 @@ func (c *Client) Connect() error {
 		return err
 	}
 
-	c.setConnected(true)
+	c.connected = true
 
 	// On connect, requeue any notifications that were
 	// sent after the error & disconnect.
@@ -219,11 +219,4 @@ func (c *Client) readErrors() {
 
 		cursor = cursor.Prev()
 	}
-}
-
-func (c *Client) setConnected(connected bool) {
-	c.connm.Lock()
-	defer c.connm.Unlock()
-
-	c.connected = true
 }
