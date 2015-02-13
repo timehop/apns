@@ -82,6 +82,26 @@ var _ = Describe("Notifications", func() {
 		})
 	})
 
+	Describe("Safari", func() {
+		Describe("#MarshalJSON", func() {
+			Context("with complete payload", func() {
+				It("should marshal APS", func() {
+					p := apns.NewPayload()
+
+					p.APS.Alert.Title = "Hello World!"
+					p.APS.Alert.Body = "This is a body"
+					p.APS.Alert.Action = "Launch"
+					p.APS.URLArgs = []string{"hello", "world"}
+
+					b, err := json.Marshal(p)
+
+					Expect(err).To(BeNil())
+					Expect(b).To(Equal([]byte(`{"aps":{"alert":{"body":"This is a body","title":"Hello World!","action":"Launch"},"url-args":["hello","world"]}}`)))
+				})
+			})
+		})
+	})
+
 	Describe("Payload", func() {
 		Describe("#MarshalJSON", func() {
 			Context("no alert (as with Passbook)", func() {
@@ -127,6 +147,19 @@ var _ = Describe("Notifications", func() {
 
 					Expect(err).To(BeNil())
 					Expect(b).To(Equal([]byte(`{"aps":{"alert":{"body":"testing"}},"email":"come@me.bro"}`)))
+				})
+			})
+
+			Context("with only MDM", func() {
+				It("should marshal MDM", func() {
+					p := apns.NewPayload()
+
+					p.MDM = "00000000-1111-3333-4444-555555555555"
+
+					b, err := json.Marshal(p)
+
+					Expect(err).To(BeNil())
+					Expect(b).To(Equal([]byte(`{"mdm":"00000000-1111-3333-4444-555555555555"}`)))
 				})
 			})
 		})

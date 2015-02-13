@@ -40,6 +40,8 @@ type NotificationResult struct {
 type Alert struct {
 	// Do not add fields without updating the implementation of isZero.
 	Body         string   `json:"body,omitempty"`
+	Title        string   `json:"title,omitempty"`
+	Action       string   `json:"action,omitempty"`
 	LocKey       string   `json:"loc-key,omitempty"`
 	LocArgs      []string `json:"loc-args,omitempty"`
 	ActionLocKey string   `json:"action-loc-key,omitempty"`
@@ -55,6 +57,7 @@ type APS struct {
 	Badge            *int // 0 to clear notifications, nil to leave as is.
 	Sound            string
 	ContentAvailable int
+	URLArgs          []string
 	Category         string // requires iOS 8+
 }
 
@@ -76,17 +79,26 @@ func (aps APS) MarshalJSON() ([]byte, error) {
 	if aps.Category != "" {
 		data["category"] = aps.Category
 	}
+	if aps.URLArgs != nil && len(aps.URLArgs) != 0 {
+		data["url-args"] = aps.URLArgs
+	}
 
 	return json.Marshal(data)
 }
 
 type Payload struct {
-	APS          APS
+	APS APS
+	// MDM for mobile device management
+	MDM          string
 	customValues map[string]interface{}
 }
 
 func (p *Payload) MarshalJSON() ([]byte, error) {
-	p.customValues["aps"] = p.APS
+	if len(p.MDM) != 0 {
+		p.customValues["mdm"] = p.MDM
+	} else {
+		p.customValues["aps"] = p.APS
+	}
 
 	return json.Marshal(p.customValues)
 }
