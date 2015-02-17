@@ -1,30 +1,72 @@
-package apns_test
+package apns
 
 import (
+	"errors"
 	"io/ioutil"
-	"net"
 	"os"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"github.com/timehop/apns"
 	"github.com/timehop/tcptest"
 )
 
+type mockSession struct {
+	sendErr error
+}
+
+func (m mockSession) Send(n Notification) error {
+	return m.sendErr
+}
+
+func (m mockSession) Connect() error {
+	return nil
+}
+
+func (m mockSession) RequeueableNotifications() []Notification {
+	return []Notification{}
+}
+
+func (m mockSession) Disconnect() {
+}
+
+func (m mockSession) Disconnected() bool {
+	return false
+}
+
+type badConnMockSession struct {
+	mockSession
+}
+
+func (_ badConnMockSession) Connect() error {
+	return errors.New("whatev")
+}
+
 var _ = Describe("Client", func() {
+	BeforeEach(func() {
+		newSession = func(_ Conn) Session { return mockSession{} }
+	})
+
 	Describe(".NewClient", func() {
 		Context("bad cert/key pair", func() {
 			It("should error out", func() {
-				_, err := apns.NewClient(apns.ProductionGateway, "missing", "missing_also")
+				_, err := NewClient(ProductionGateway, "missing", "missing_also")
 				Expect(err).NotTo(BeNil())
 			})
 		})
 
 		Context("valid cert/key pair", func() {
 			It("should create a valid client", func() {
-				_, err := apns.NewClient(apns.SandboxGateway, string(tcptest.LocalhostCert), string(tcptest.LocalhostKey))
+				_, err := NewClient(SandboxGateway, string(tcptest.LocalhostCert), string(tcptest.LocalhostKey))
 				Expect(err).To(BeNil())
+			})
+		})
+
+		Context("bad connection", func() {
+			It("should error out", func() {
+				newSession = func(_ Conn) Session { return badConnMockSession{} }
+
+				_, err := NewClient(SandboxGateway, string(tcptest.LocalhostCert), string(tcptest.LocalhostKey))
+				Expect(err).NotTo(BeNil())
 			})
 		})
 	})
@@ -32,7 +74,7 @@ var _ = Describe("Client", func() {
 	Describe(".NewClientWithFiles", func() {
 		Context("missing cert/key pair", func() {
 			It("should error out", func() {
-				_, err := apns.NewClientWithFiles(apns.ProductionGateway, "missing", "missing_also")
+				_, err := NewClientWithFiles(ProductionGateway, "missing", "missing_also")
 				Expect(err).NotTo(BeNil())
 			})
 		})
@@ -61,121 +103,38 @@ var _ = Describe("Client", func() {
 			})
 
 			It("should create a valid client", func() {
-				_, err := apns.NewClientWithFiles(apns.ProductionGateway, certFile.Name(), keyFile.Name())
+				_, err := NewClientWithFiles(ProductionGateway, certFile.Name(), keyFile.Name())
 				Expect(err).To(BeNil())
-			})
-		})
-	})
-
-	Describe("Connect", func() {
-		It("should not return an error", func() {
-			s := tcptest.NewTLSServer(func(c net.Conn) {
-				c.Write([]byte{0})
-				c.Close()
-			})
-			defer s.Close()
-
-			c, err := apns.NewClient(s.Addr, string(tcptest.LocalhostCert), string(tcptest.LocalhostKey))
-			Expect(err).To(BeNil())
-
-			err = c.Connect()
-			Expect(err).To(BeNil())
-		})
-	})
-
-	Describe("Reading Errors", func() {
-		Context("send a notification and get an error", func() {
-			It("should not return an error", func() {
-				s := tcptest.NewTLSServer(func(c net.Conn) {
-					c.Write([]byte("123456"))
-					c.Write([]byte{0})
-					c.Close()
-				})
-				defer s.Close()
-
-				c, err := apns.NewClient(s.Addr, string(tcptest.LocalhostCert), string(tcptest.LocalhostKey))
-				Expect(err).To(BeNil())
-
-				err = c.Connect()
-				Expect(err).To(BeNil())
-
-				err = c.Send(apns.Notification{Identifier: 859059510, DeviceToken: "0000000000000000000000000000000000000000000000000000000000000000"})
-				Expect(err).To(BeNil())
-
-				nr := <-c.FailedNotifs
-				Expect(nr.Err).NotTo(BeNil())
-				Expect(nr.Notif.Identifier).To(Equal(uint32(859059510)))
-			})
-		})
-
-		Context("send a multiple notifications and get an error", func() {
-			It("should not return an error", func() {
-				s := tcptest.NewTLSServer(func(c net.Conn) {
-					c.Write([]byte("123456"))
-					c.Write([]byte{0})
-					c.Close()
-				})
-				defer s.Close()
-
-				c, err := apns.NewClient(s.Addr, string(tcptest.LocalhostCert), string(tcptest.LocalhostKey))
-				Expect(err).To(BeNil())
-
-				err = c.Connect()
-				Expect(err).To(BeNil())
-
-				err = c.Send(apns.Notification{Identifier: 859059510, DeviceToken: "0000000000000000000000000000000000000000000000000000000000000000"})
-				Expect(err).To(BeNil())
-
-				err = c.Send(apns.Notification{Identifier: 159059510, DeviceToken: "0000000000000000000000000000000000000000000000000000000000000000"})
-				Expect(err).To(BeNil())
-
-				err = c.Send(apns.Notification{Identifier: 259059510, DeviceToken: "0000000000000000000000000000000000000000000000000000000000000000"})
-				Expect(err).To(BeNil())
-
-				nr := <-c.FailedNotifs
-				Expect(nr.Err).NotTo(BeNil())
-				Expect(nr.Notif.Identifier).To(Equal(uint32(859059510)))
 			})
 		})
 	})
 
 	Describe("Send", func() {
-		Context("valid push", func() {
-			It("should not return an error", func() {
-				s := tcptest.NewTLSServer(func(c net.Conn) {
-					c.Write([]byte{0})
-					c.Close()
+		Context("connected", func() {
+			Context("valid push", func() {
+				It("should not return an error", func() {
+					c, err := NewClient(SandboxGateway, string(tcptest.LocalhostCert), string(tcptest.LocalhostKey))
+					Expect(err).To(BeNil())
+
+					err = c.Send(Notification{DeviceToken: "0000000000000000000000000000000000000000000000000000000000000000"})
+					Expect(err).To(BeNil())
 				})
-				defer s.Close()
+			})
 
-				c, err := apns.NewClient(s.Addr, string(tcptest.LocalhostCert), string(tcptest.LocalhostKey))
-				Expect(err).To(BeNil())
+			Context("invalid notification", func() {
+				It("should return an error", func() {
+					newSession = func(_ Conn) Session { return mockSession{sendErr: errors.New("")} }
 
-				err = c.Connect()
-				Expect(err).To(BeNil())
+					c, err := NewClient(SandboxGateway, string(tcptest.LocalhostCert), string(tcptest.LocalhostKey))
+					Expect(err).To(BeNil())
 
-				err = c.Send(apns.Notification{DeviceToken: "0000000000000000000000000000000000000000000000000000000000000000"})
-				Expect(err).To(BeNil())
+					err = c.Send(Notification{DeviceToken: "lol"})
+					Expect(err).NotTo(BeNil())
+				})
 			})
 		})
 
-		Context("invalid notification", func() {
-			It("should return an error", func() {
-				s := tcptest.NewTLSServer(func(c net.Conn) {
-					c.Write([]byte{0})
-					c.Close()
-				})
-				defer s.Close()
-
-				c, err := apns.NewClient(s.Addr, string(tcptest.LocalhostCert), string(tcptest.LocalhostKey))
-				Expect(err).To(BeNil())
-
-				err = c.Connect()
-				Expect(err).To(BeNil())
-
-				err = c.Send(apns.Notification{DeviceToken: "lol"})
-				Expect(err).NotTo(BeNil())
-			})
+		Context("disconnected", func() {
 		})
 	})
 })
