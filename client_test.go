@@ -11,30 +11,41 @@ import (
 )
 
 type mockSession struct {
-	sendErr error
+	sendCB            func(n Notification) error
+	requeueNotifs     []Notification
+	disconnectedState bool
 }
 
-func (m mockSession) Send(n Notification) error {
-	return m.sendErr
+func (m *mockSession) Send(n Notification) error {
+	if m.sendCB == nil {
+		return nil
+	}
+
+	return m.sendCB(n)
 }
 
-func (m mockSession) Connect() error {
+func (m *mockSession) Connect() error {
 	return nil
 }
 
-func (m mockSession) RequeueableNotifications() []Notification {
-	return []Notification{}
+func (m *mockSession) RequeueableNotifications() []Notification {
+	if len(m.requeueNotifs) == 0 {
+		return []Notification{}
+	}
+
+	return m.requeueNotifs
 }
 
-func (m mockSession) Disconnect() {
+func (m *mockSession) Disconnect() {
+	m.disconnectedState = true
 }
 
-func (m mockSession) Disconnected() bool {
-	return false
+func (m *mockSession) Disconnected() bool {
+	return m.disconnectedState
 }
 
 type badConnMockSession struct {
-	mockSession
+	*mockSession
 }
 
 func (_ badConnMockSession) Connect() error {
@@ -43,7 +54,7 @@ func (_ badConnMockSession) Connect() error {
 
 var _ = Describe("Client", func() {
 	BeforeEach(func() {
-		newSession = func(_ Conn) Session { return mockSession{} }
+		newSession = func(_ Conn) Session { return &mockSession{} }
 	})
 
 	Describe(".NewClient", func() {
@@ -123,7 +134,13 @@ var _ = Describe("Client", func() {
 
 			Context("invalid notification", func() {
 				It("should return an error", func() {
-					newSession = func(_ Conn) Session { return mockSession{sendErr: errors.New("")} }
+					newSession = func(_ Conn) Session {
+						return &mockSession{
+							sendCB: func(_ Notification) error {
+								return errors.New("")
+							},
+						}
+					}
 
 					c, err := NewClient(SandboxGateway, string(tcptest.LocalhostCert), string(tcptest.LocalhostKey))
 					Expect(err).To(BeNil())
@@ -135,6 +152,54 @@ var _ = Describe("Client", func() {
 		})
 
 		Context("disconnected", func() {
+			It("should reconnect", func() {
+				newSessCount := 0
+				newSession = func(_ Conn) Session {
+					newSessCount += 1
+					return &mockSession{}
+				}
+
+				c, err := NewClient(SandboxGateway, string(tcptest.LocalhostCert), string(tcptest.LocalhostKey))
+				Expect(err).To(BeNil())
+
+				c.sess.Disconnect()
+
+				err = c.Send(Notification{DeviceToken: "0000000000000000000000000000000000000000000000000000000000000000"})
+				Expect(err).To(BeNil())
+
+				Expect(newSessCount).To(Equal(2))
+			})
+		})
+
+		It("should reconnect and requeue", func() {
+			newSessCount := 0
+			sendCount := 0
+
+			newSession = func(_ Conn) Session {
+				newSessCount += 1
+				return &mockSession{
+					requeueNotifs: []Notification{
+						Notification{},
+						Notification{},
+						Notification{},
+					},
+					sendCB: func(_ Notification) error {
+						sendCount += 1
+						return nil
+					},
+				}
+			}
+
+			c, err := NewClient(SandboxGateway, string(tcptest.LocalhostCert), string(tcptest.LocalhostKey))
+			Expect(err).To(BeNil())
+
+			c.sess.Disconnect()
+
+			err = c.Send(Notification{DeviceToken: "0000000000000000000000000000000000000000000000000000000000000000"})
+			Expect(err).To(BeNil())
+
+			Expect(newSessCount).To(Equal(2))
+			Expect(sendCount).To(Equal(4))
 		})
 	})
 })
