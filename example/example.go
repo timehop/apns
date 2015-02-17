@@ -13,10 +13,6 @@ func main() {
 		log.Fatal("Could not create client: ", err.Error())
 	}
 
-	if err := c.Connect(); err != nil {
-		log.Fatal("Could not create connect: ", err.Error())
-	}
-
 	i := 1
 	for {
 		fmt.Print("Enter '<token> <badge> <msg>': ")
