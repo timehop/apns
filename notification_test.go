@@ -79,6 +79,62 @@ var _ = Describe("Notifications", func() {
 					Expect(j).To(Equal([]byte(`{"body":"USA scores!","loc-key":"game","loc-args":["USA","BRA"],"launch-image":"scoreboard"}`)))
 				})
 			})
+
+			Context("only alert", func() {
+				It("should just have that field", func() {
+					a := apns.APS{Alert: apns.Alert{Body: "test"}}
+
+					j, err := json.Marshal(a)
+
+					Expect(err).To(BeNil())
+					Expect(j).To(Equal([]byte(`{"alert":{"body":"test"}}`)))
+				})
+			})
+
+			Context("only badge", func() {
+				It("should just have that field", func() {
+					i := 7
+					a := apns.APS{Badge: &i}
+
+					j, err := json.Marshal(a)
+
+					Expect(err).To(BeNil())
+					Expect(j).To(Equal([]byte(`{"badge":7}`)))
+				})
+			})
+
+			Context("only sound", func() {
+				It("should just have that field", func() {
+					a := apns.APS{Sound: "test"}
+
+					j, err := json.Marshal(a)
+
+					Expect(err).To(BeNil())
+					Expect(j).To(Equal([]byte(`{"sound":"test"}`)))
+				})
+			})
+
+			Context("only content-available", func() {
+				It("should just have that field", func() {
+					a := apns.APS{ContentAvailable: 7}
+
+					j, err := json.Marshal(a)
+
+					Expect(err).To(BeNil())
+					Expect(j).To(Equal([]byte(`{"content-available":7}`)))
+				})
+			})
+
+			Context("only category", func() {
+				It("should just have that field", func() {
+					a := apns.APS{Category: "test"}
+
+					j, err := json.Marshal(a)
+
+					Expect(err).To(BeNil())
+					Expect(j).To(Equal([]byte(`{"category":"test"}`)))
+				})
+			})
 		})
 	})
 

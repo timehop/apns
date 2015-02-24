@@ -53,12 +53,12 @@ func (a *Alert) isZero() bool {
 }
 
 type APS struct {
-	Alert            Alert
-	Badge            *int // 0 to clear notifications, nil to leave as is.
-	Sound            string
-	ContentAvailable int
+	Alert            Alert  `json:"alert,omitempty"`
+	Badge            *int   `json:"badge,omitempty"` // 0 to clear notifications, nil to leave as is.
+	Sound            string `json:"sound,omitempty"`
+	ContentAvailable int    `json:"content-available,omitempty"`
 	URLArgs          []string
-	Category         string // requires iOS 8+
+	Category         string `json:"category,omitempty"` // requires iOS 8+
 }
 
 func (aps APS) MarshalJSON() ([]byte, error) {
