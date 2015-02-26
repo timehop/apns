@@ -82,7 +82,7 @@ func NewSession(conn Conn) Session {
 }
 
 func (s *session) Connect() error {
-	if s.st != sessionStateNew {
+	if s.isNew() {
 		return errors.New("can't connect unless the session is new")
 	}
 
@@ -90,13 +90,30 @@ func (s *session) Connect() error {
 	return nil
 }
 
+func (s *session) isNew() bool {
+	s.stm.Lock()
+	defer s.stm.Unlock()
+
+	return s.st != sessionStateNew
+}
+
 func (s *session) Disconnected() bool {
+	s.stm.Lock()
+	defer s.stm.Unlock()
+
 	return s.st == sessionStateDisconnected
+}
+
+func (s *session) Connnected() bool {
+	s.stm.Lock()
+	defer s.stm.Unlock()
+
+	return s.st == sessionStateConnected
 }
 
 func (s *session) Send(n Notification) error {
 	// If disconnected, error out
-	if s.st != sessionStateConnected {
+	if s.Connnected() {
 		return errors.New("not connected")
 	}
 
