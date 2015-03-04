@@ -113,7 +113,7 @@ func (s *session) Connnected() bool {
 
 func (s *session) Send(n Notification) error {
 	// If disconnected, error out
-	if s.Connnected() {
+	if !s.Connnected() {
 		return errors.New("not connected")
 	}
 
