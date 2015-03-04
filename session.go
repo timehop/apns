@@ -50,9 +50,9 @@ func (b *buffer) Add(v interface{}) *list.Element {
 type sessionState int
 
 const (
-	sessionStateNew          sessionState = iota
-	sessionStateConnected    sessionState = iota
-	sessionStateDisconnected sessionState = iota
+	sessionStateNew sessionState = 1 << iota
+	sessionStateConnected
+	sessionStateDisconnected
 )
 
 type session struct {
@@ -143,11 +143,7 @@ func (s *session) send(b []byte) error {
 		return err
 	}
 
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func (s *session) Disconnect() {
