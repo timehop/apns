@@ -49,7 +49,7 @@ type Alert struct {
 }
 
 func (a *Alert) isZero() bool {
-	return len(a.Body) == 0 && len(a.LocKey) == 0 && len(a.LocArgs) == 0 && len(a.ActionLocKey) == 0 && len(a.LaunchImage) == 0
+	return len(a.Body) == 0 && len(a.Title) == 0 && len(a.Action) == 0 && len(a.LocKey) == 0 && len(a.LocArgs) == 0 && len(a.ActionLocKey) == 0 && len(a.LaunchImage) == 0
 }
 
 type APS struct {
