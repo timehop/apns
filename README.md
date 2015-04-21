@@ -104,7 +104,7 @@ ginkgo -randomizeAllSpecs
 
 ## Contributing
 
-- Fork the repo
+- Fork the repo ([Recommended process](https://splice.com/blog/contributing-open-source-git-repositories-go/))
 - Make your changes
 - [Run the tests](https://github.com/timehop/apns#running-the-tests)
 - Submit a pull request
