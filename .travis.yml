@@ -11,3 +11,11 @@ script: ginkgo -r --skipMeasurements --cover --trace --race
 env:
     global:
         - PATH=$HOME/gopath/bin:$PATH
+
+notifications:
+  email: false
+
+branches:
+  only:
+    - master
+    - develop
