@@ -132,7 +132,7 @@ var _ = Describe("Notifications", func() {
 					b, err := json.Marshal(p)
 
 					Expect(err).To(BeNil())
-					Expect(b).To(Equal([]byte(`{"aps":{"alert":{"body":"testing"}}}`)))
+					Expect(b).To(Equal([]byte(`{"aps":{"alert":"testing"}}`)))
 				})
 			})
 
@@ -146,7 +146,7 @@ var _ = Describe("Notifications", func() {
 					b, err := json.Marshal(p)
 
 					Expect(err).To(BeNil())
-					Expect(b).To(Equal([]byte(`{"aps":{"alert":{"body":"testing"}},"email":"come@me.bro"}`)))
+					Expect(b).To(Equal([]byte(`{"aps":{"alert":"testing"},"email":"come@me.bro"}`)))
 				})
 			})
 

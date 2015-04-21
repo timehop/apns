@@ -48,8 +48,12 @@ type Alert struct {
 	LaunchImage  string   `json:"launch-image,omitempty"`
 }
 
+func (a *Alert) isSimple() bool {
+	return len(a.Title) == 0 && len(a.Action) == 0 && len(a.LocKey) == 0 && len(a.LocArgs) == 0 && len(a.ActionLocKey) == 0 && len(a.LaunchImage) == 0
+}
+
 func (a *Alert) isZero() bool {
-	return len(a.Body) == 0 && len(a.Title) == 0 && len(a.Action) == 0 && len(a.LocKey) == 0 && len(a.LocArgs) == 0 && len(a.ActionLocKey) == 0 && len(a.LaunchImage) == 0
+	return a.isSimple() && len(a.Body) == 0
 }
 
 type APS struct {
@@ -65,7 +69,11 @@ func (aps APS) MarshalJSON() ([]byte, error) {
 	data := make(map[string]interface{})
 
 	if !aps.Alert.isZero() {
-		data["alert"] = aps.Alert
+		if aps.Alert.isSimple() {
+			data["alert"] = aps.Alert.Body
+		} else {
+			data["alert"] = aps.Alert
+		}
 	}
 	if aps.Badge != nil {
 		data["badge"] = aps.Badge
