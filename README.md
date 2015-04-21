@@ -13,11 +13,17 @@ This library implements a few features that we couldn't find in any one library 
 * **Use of New Protocol** - Apple came out with v2 of their API with support for variable length payloads. This library uses that protocol.
 * **Robust Send Guarantees** - APNS has asynchronous feedback on whether a push sent. That means that if you send pushes after a bad send, those pushes will be lost forever. Our library records the last N pushes, detects errors, and is able to resend the pushes that could have been lost. [More reading](http://redth.codes/the-problem-with-apples-push-notification-ser/)
 
+## API Compatibility
+
+The apns package may undergo breaking changes. A tool like [godep](https://github.com/tools/godep) is recommended to vendor the current release.
+
 ## Install
 
 ```
 go get github.com/timehop/apns
 ```
+
+Checkout the `develop` branch for the current work in progress.
 
 ## Usage
 
