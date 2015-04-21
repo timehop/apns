@@ -109,9 +109,6 @@ ginkgo -randomizeAllSpecs
 - [Run the tests](https://github.com/timehop/apns#running-the-tests)
 - Submit a pull request
 
-If you need any ideas on what to work on, check out the
-[TODO](https://github.com/timehop/apns/blob/master/TODO.md)
-
 ## License
 
 [MIT License](https://github.com/timehop/apns/blob/master/LICENSE)
