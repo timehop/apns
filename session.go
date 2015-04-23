@@ -7,6 +7,7 @@ import (
 	"sync"
 )
 
+// SessionError associates an error from Apple to a notification.
 type SessionError struct {
 	Notification Notification
 	Err          Error
@@ -16,6 +17,7 @@ func (s SessionError) Error() string {
 	return s.Err.Error()
 }
 
+// Session to Apple's Push Notification server.
 type Session interface {
 	Send(n Notification) error
 	Connect() error
@@ -70,6 +72,7 @@ type session struct {
 	err SessionError
 }
 
+// NewSession creates a new session.
 func NewSession(conn Conn) Session {
 	return &session{
 		st:    sessionStateNew,
@@ -81,6 +84,7 @@ func NewSession(conn Conn) Session {
 	}
 }
 
+// Connect session to gateway.
 func (s *session) Connect() error {
 	if s.isNew() {
 		return errors.New("can't connect unless the session is new")
@@ -97,6 +101,7 @@ func (s *session) isNew() bool {
 	return s.st != sessionStateNew
 }
 
+// Disconnected indicates whether session is disconnected.
 func (s *session) Disconnected() bool {
 	s.stm.Lock()
 	defer s.stm.Unlock()
@@ -104,16 +109,18 @@ func (s *session) Disconnected() bool {
 	return s.st == sessionStateDisconnected
 }
 
-func (s *session) Connnected() bool {
+// Connected indicates whether session is connected.
+func (s *session) Connected() bool {
 	s.stm.Lock()
 	defer s.stm.Unlock()
 
 	return s.st == sessionStateConnected
 }
 
+// Send notification to gateway.
 func (s *session) Send(n Notification) error {
 	// If disconnected, error out
-	if !s.Connnected() {
+	if !s.Connected() {
 		return errors.New("not connected")
 	}
 
@@ -146,11 +153,12 @@ func (s *session) send(b []byte) error {
 	return err
 }
 
+// Disconnect from gateway.
 func (s *session) Disconnect() {
-	// Disconnect
 	s.transitionState(sessionStateDisconnected)
 }
 
+// RequeueableNotifications returns good notifications sent after an error.
 func (s *session) RequeueableNotifications() []Notification {
 	notifs := []Notification{}
 

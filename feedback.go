@@ -8,10 +8,12 @@ import (
 	"time"
 )
 
+// Feedback is a connection to Apple's feedback service.
 type Feedback struct {
 	Conn Conn
 }
 
+// FeedbackTuple represents the feedback received from Apple.
 type FeedbackTuple struct {
 	Timestamp   time.Time
 	TokenLength uint16
@@ -37,12 +39,14 @@ func feedbackTupleFromBytes(b []byte) FeedbackTuple {
 	}
 }
 
+// NewFeedbackWithCert creates a new feedback service client with a certificate.
 func NewFeedbackWithCert(gw string, cert tls.Certificate) Feedback {
 	conn := NewConnWithCert(gw, cert)
 
 	return Feedback{Conn: conn}
 }
 
+// NewFeedback creates a new feedback service client with a certificate/key pair.
 func NewFeedback(gw string, cert string, key string) (Feedback, error) {
 	conn, err := NewConn(gw, cert, key)
 	if err != nil {
@@ -52,6 +56,7 @@ func NewFeedback(gw string, cert string, key string) (Feedback, error) {
 	return Feedback{Conn: conn}, nil
 }
 
+// NewFeedbackWithFiles creates a new feedback service client from certificate and key files.
 func NewFeedbackWithFiles(gw string, certFile string, keyFile string) (Feedback, error) {
 	conn, err := NewConnWithFiles(gw, certFile, keyFile)
 	if err != nil {

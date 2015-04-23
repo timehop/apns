@@ -11,7 +11,9 @@ import (
 )
 
 const (
-	PriorityImmediate     = 10
+	// PriorityImmediate for time sensitive notifications (not for silent push messages).
+	PriorityImmediate = 10
+	// PriorityPowerConserve for notifications that are less time sensitive.
 	PriorityPowerConserve = 5
 )
 
@@ -36,13 +38,8 @@ const (
 	priorityItemLength               = 1
 )
 
-type NotificationResult struct {
-	Notif Notification
-	Err   Error
-}
-
+// Alert to send.
 type Alert struct {
-	// Do not add fields without updating the implementation of isZero.
 	Body         string   `json:"body,omitempty"`
 	Title        string   `json:"title,omitempty"`
 	Action       string   `json:"action,omitempty"`
@@ -50,8 +47,11 @@ type Alert struct {
 	LocArgs      []string `json:"loc-args,omitempty"`
 	ActionLocKey string   `json:"action-loc-key,omitempty"`
 	LaunchImage  string   `json:"launch-image,omitempty"`
+
+	// Do not add fields without updating the implementation of isZero.
 }
 
+// isSimple alerts only contain a Body.
 func (a *Alert) isSimple() bool {
 	return len(a.Title) == 0 && len(a.Action) == 0 && len(a.LocKey) == 0 && len(a.LocArgs) == 0 && len(a.ActionLocKey) == 0 && len(a.LaunchImage) == 0
 }
@@ -60,6 +60,7 @@ func (a *Alert) isZero() bool {
 	return a.isSimple() && len(a.Body) == 0
 }
 
+// APS is the Apple-reserved aps namespace in a push notification.
 type APS struct {
 	Alert            Alert
 	Badge            *int // 0 to clear notifications, nil to leave as is.
@@ -69,6 +70,7 @@ type APS struct {
 	Category         string // requires iOS 8+
 }
 
+// MarshalJSON implements the json.Marshaler interface.
 func (aps APS) MarshalJSON() ([]byte, error) {
 	data := make(map[string]interface{})
 
@@ -98,6 +100,7 @@ func (aps APS) MarshalJSON() ([]byte, error) {
 	return json.Marshal(data)
 }
 
+// Payload to send Apple.
 type Payload struct {
 	APS APS
 	// MDM for mobile device management
@@ -105,6 +108,7 @@ type Payload struct {
 	customValues map[string]interface{}
 }
 
+// MarshalJSON implements the json.Marshaler interface.
 func (p *Payload) MarshalJSON() ([]byte, error) {
 	if len(p.MDM) != 0 {
 		p.customValues["mdm"] = p.MDM
@@ -115,6 +119,7 @@ func (p *Payload) MarshalJSON() ([]byte, error) {
 	return json.Marshal(p.customValues)
 }
 
+// SetCustomValue sets a custom payload value.
 func (p *Payload) SetCustomValue(key string, value interface{}) error {
 	if key == "aps" {
 		return errors.New("cannot assign a custom APS value in payload")
@@ -125,6 +130,7 @@ func (p *Payload) SetCustomValue(key string, value interface{}) error {
 	return nil
 }
 
+// Notification contains the payload.
 type Notification struct {
 	ID          string
 	DeviceToken string
@@ -134,14 +140,17 @@ type Notification struct {
 	Payload     *Payload
 }
 
+// NewNotification creates a new notification.
 func NewNotification() Notification {
 	return Notification{Payload: NewPayload()}
 }
 
+// NewPayload creates a new payload.
 func NewPayload() *Payload {
 	return &Payload{customValues: map[string]interface{}{}}
 }
 
+// ToBinary encodes a notification to send it.
 func (n Notification) ToBinary() ([]byte, error) {
 	b := []byte{}
 
