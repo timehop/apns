@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/timehop/apns"
@@ -84,7 +85,7 @@ var _ = Describe("Feedback", func() {
 
 				r := 0
 				for _ = range c {
-					r += 1
+					r++
 				}
 
 				Expect(r).To(Equal(0))
@@ -104,7 +105,7 @@ var _ = Describe("Feedback", func() {
 
 				r := 0
 				for _ = range c {
-					r += 1
+					r++
 				}
 
 				Expect(r).To(Equal(0))

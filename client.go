@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// Client creates a session with Apple and handles reconnection.
 type Client struct {
 	conn Conn
 
@@ -25,11 +26,13 @@ func newClientWithConn(conn Conn) (Client, error) {
 	return Client{conn, sess, sync.Mutex{}}, nil
 }
 
+// NewClientWithCert creates a client of the Apple gateway given a certificate.
 func NewClientWithCert(gw string, cert tls.Certificate) (Client, error) {
 	conn := NewConnWithCert(gw, cert)
 	return newClientWithConn(conn)
 }
 
+// NewClient is a helper that accepts a certificate/key pair.
 func NewClient(gw string, cert string, key string) (Client, error) {
 	conn, err := NewConn(gw, cert, key)
 	if err != nil {
@@ -39,6 +42,7 @@ func NewClient(gw string, cert string, key string) (Client, error) {
 	return newClientWithConn(conn)
 }
 
+// NewClientWithFiles is a helper that loads a certificate/key from files.
 func NewClientWithFiles(gw string, certFile string, keyFile string) (Client, error) {
 	conn, err := NewConnWithFiles(gw, certFile, keyFile)
 	if err != nil {
@@ -48,6 +52,7 @@ func NewClientWithFiles(gw string, certFile string, keyFile string) (Client, err
 	return newClientWithConn(conn)
 }
 
+// Send a notification, handling disconnections.
 func (c *Client) Send(n Notification) error {
 	if c.sess.Disconnected() {
 		c.reconnectAndRequeue()

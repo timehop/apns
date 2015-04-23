@@ -48,7 +48,7 @@ type badConnMockSession struct {
 	*mockSession
 }
 
-func (_ badConnMockSession) Connect() error {
+func (m badConnMockSession) Connect() error {
 	return errors.New("whatev")
 }
 
@@ -155,7 +155,7 @@ var _ = Describe("Client", func() {
 			It("should reconnect", func() {
 				newSessCount := 0
 				newSession = func(_ Conn) Session {
-					newSessCount += 1
+					newSessCount++
 					return &mockSession{}
 				}
 
@@ -176,7 +176,7 @@ var _ = Describe("Client", func() {
 			sendCount := 0
 
 			newSession = func(_ Conn) Session {
-				newSessCount += 1
+				newSessCount++
 				return &mockSession{
 					requeueNotifs: []Notification{
 						Notification{},
@@ -184,7 +184,7 @@ var _ = Describe("Client", func() {
 						Notification{},
 					},
 					sendCB: func(_ Notification) error {
-						sendCount += 1
+						sendCount++
 						return nil
 					},
 				}

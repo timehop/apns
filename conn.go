@@ -9,11 +9,15 @@ import (
 )
 
 const (
+	// ProductionGateway is the host for Apple Push Notification server.
 	ProductionGateway = "gateway.push.apple.com:2195"
-	SandboxGateway    = "gateway.sandbox.push.apple.com:2195"
+	// SandboxGateway is Apple's gateway for development.
+	SandboxGateway = "gateway.sandbox.push.apple.com:2195"
 
+	// ProductionFeedbackGateway is Apple's feedback service.
 	ProductionFeedbackGateway = "feedback.push.apple.com:2196"
-	SandboxFeedbackGateway    = "feedback.sandbox.push.apple.com:2196"
+	// SandboxFeedbackGateway is Apple's feedback service for development.
+	SandboxFeedbackGateway = "feedback.sandbox.push.apple.com:2196"
 )
 
 // Conn is a wrapper for the actual TLS connections made to Apple
@@ -32,6 +36,7 @@ type conn struct {
 	connected bool
 }
 
+// NewConnWithCert creates a new Conn from a certificate.
 func NewConnWithCert(gw string, cert tls.Certificate) Conn {
 	gatewayParts := strings.Split(gw, ":")
 	tls := tls.Config{
@@ -43,7 +48,7 @@ func NewConnWithCert(gw string, cert tls.Certificate) Conn {
 	return &conn{gateway: gw, tls: &tls}
 }
 
-// NewConnWithFiles creates a new Conn from certificate and key in the specified files
+// NewConn creates a new Conn from certificate and key pair.
 func NewConn(gw string, crt string, key string) (Conn, error) {
 	cert, err := tls.X509KeyPair([]byte(crt), []byte(key))
 	if err != nil {
@@ -53,7 +58,7 @@ func NewConn(gw string, crt string, key string) (Conn, error) {
 	return NewConnWithCert(gw, cert), nil
 }
 
-// NewConnWithFiles creates a new Conn from certificate and key in the specified files
+// NewConnWithFiles creates a new Conn from certificate and key in the specified files.
 func NewConnWithFiles(gw string, certFile string, keyFile string) (Conn, error) {
 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
@@ -79,6 +84,7 @@ func (c *conn) Connect() error {
 	return nil
 }
 
+// Close the connection.
 func (c *conn) Close() error {
 	if c.netConn != nil {
 		return c.netConn.Close()
