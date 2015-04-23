@@ -11,7 +11,7 @@ import (
 type mockConn struct {
 	connect         func() error
 	read            func([]byte) (int, error)
-	readWithTimeout func([]byte, time.Time) (int, error)
+	setReadDeadline func(time.Time) error
 }
 
 func (m *mockConn) Connect() error {
@@ -37,12 +37,11 @@ func (m *mockConn) Close() error {
 	return nil
 }
 
-func (m *mockConn) ReadWithTimeout(b []byte, t time.Time) (int, error) {
-	if m.readWithTimeout != nil {
-		return m.readWithTimeout(b, t)
+func (m *mockConn) SetReadDeadline(t time.Time) error {
+	if m.setReadDeadline != nil {
+		return m.setReadDeadline(t)
 	}
-
-	return 0, nil
+	return nil
 }
 
 func TestApns(t *testing.T) {

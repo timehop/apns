@@ -85,7 +85,13 @@ func (f Feedback) receive(fc chan FeedbackTuple) {
 	for {
 		b := make([]byte, 38)
 
-		_, err := f.Conn.ReadWithTimeout(b, time.Now().Add(100*time.Millisecond))
+		err = f.Conn.SetReadDeadline(time.Now().Add(100 * time.Millisecond))
+		if err != nil {
+			close(fc)
+			return
+		}
+
+		_, err = f.Conn.Read(b)
 		if err != nil {
 			close(fc)
 			return

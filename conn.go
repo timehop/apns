@@ -25,7 +25,7 @@ type Conn interface {
 	io.ReadWriteCloser
 
 	Connect() error
-	ReadWithTimeout(p []byte, deadline time.Time) (int, error)
+	SetReadDeadline(deadline time.Time) error
 }
 
 type conn struct {
@@ -36,7 +36,7 @@ type conn struct {
 	connected bool
 }
 
-// NewConnWithCert creates a new Conn from a certificate.
+// NewConnWithCert creates a new connection from a certificate.
 func NewConnWithCert(gw string, cert tls.Certificate) Conn {
 	gatewayParts := strings.Split(gw, ":")
 	tls := tls.Config{
@@ -98,11 +98,10 @@ func (c *conn) Read(p []byte) (int, error) {
 	return c.netConn.Read(p)
 }
 
-// ReadWithTimeout reads data from the connection and returns an error
-// after duration
-func (c *conn) ReadWithTimeout(p []byte, deadline time.Time) (int, error) {
-	c.netConn.SetReadDeadline(deadline)
-	return c.netConn.Read(p)
+// SetReadDeadline sets the read deadline on the underlying connection.
+// A zero value for t means Read will not time out.
+func (c *conn) SetReadDeadline(deadline time.Time) error {
+	return c.netConn.SetReadDeadline(deadline)
 }
 
 // Write writes data from the connection

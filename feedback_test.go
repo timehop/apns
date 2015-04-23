@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -95,7 +94,7 @@ var _ = Describe("Feedback", func() {
 		Context("times out", func() {
 			It("should not receive anything", func() {
 				m := mockConn{
-					readWithTimeout: func(b []byte, t time.Time) (int, error) {
+					read: func(b []byte) (int, error) {
 						return 0, net.UnknownNetworkError("")
 					},
 				}

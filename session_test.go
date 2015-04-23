@@ -2,6 +2,7 @@ package apns
 
 import (
 	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -24,8 +25,8 @@ func (m mockConn) Connect() error {
 	return nil
 }
 
-func (m mockConn) ReadWithTimeout(p []byte, deadline time.Time) (int, error) {
-	return 0, nil
+func (m mockConn) SetReadDeadline(deadline time.Time) error {
+	return nil
 }
 
 var _ = Describe("Session", func() {
