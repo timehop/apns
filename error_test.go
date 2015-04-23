@@ -79,14 +79,14 @@ var _ = Describe("Error", func() {
 		})
 
 		Context("error with unrecognized code", func() {
-			ShouldBeErrorWithErrStr(300, apns.ErrUnknown)
+			ShouldBeErrorWithErrStr(300, apns.ErrUnrecognizedErrorResponse)
 		})
 
 		Context("not enough bytes", func() {
-			It("should be ErrUnknown", func() {
+			It("should be ErrUnrecognizedErrorResponse", func() {
 				e := apns.NewError([]byte{})
 				Expect(e).NotTo(BeNil())
-				Expect(e.ErrStr).To(Equal(apns.ErrUnknown))
+				Expect(e.ErrStr).To(Equal(apns.ErrUnrecognizedErrorResponse))
 			})
 		})
 	})
