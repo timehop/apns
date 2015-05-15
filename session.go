@@ -7,13 +7,13 @@ import (
 	"sync"
 )
 
-// SessionError associates an error from Apple to a notification.
-type SessionError struct {
-	Notification Notification
-	Err          Error
+// NotificationResult associates an error from Apple to a notification.
+type NotificationResult struct {
+	Notif Notification
+	Err   Error
 }
 
-func (s SessionError) Error() string {
+func (s NotificationResult) Error() string {
 	return s.Err.Error()
 }
 
@@ -69,7 +69,7 @@ type session struct {
 	id  uint32
 	idm sync.Mutex
 
-	err SessionError
+	err NotificationResult
 }
 
 // NewSession creates a new session.
@@ -170,7 +170,7 @@ func (s *session) RequeueableNotifications() []Notification {
 	// Walk back to last known good notification and return the slice
 	var e *list.Element
 	for e = s.b.Front(); e != nil; e = e.Next() {
-		if n, ok := e.Value.(Notification); ok && n.Identifier == s.err.Notification.Identifier {
+		if n, ok := e.Value.(Notification); ok && n.Identifier == s.err.Notif.Identifier {
 			break
 		}
 	}
@@ -231,7 +231,7 @@ func (s *session) readErrors() {
 
 		// If the notification, move cursor after the trouble notification
 		if n.Identifier == e.Identifier {
-			s.err = SessionError{n, e}
+			s.err = NotificationResult{n, e}
 		}
 	}
 }
