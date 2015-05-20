@@ -71,6 +71,10 @@ func (s *session) Disconnected() bool {
 	return s.st == sessionStateDisconnected
 }
 
+func (s *session) RequeueableNotifications() []Notification {
+	return s.b.RequeueableNotifications(s.err.Identifier)
+}
+
 // Connected indicates whether session is connected.
 func (s *session) Connected() bool {
 	s.stm.Lock()

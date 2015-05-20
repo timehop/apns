@@ -40,10 +40,8 @@ func (s NotificationResult) Error() string {
 	return s.Err.Error()
 }
 
-func (s *session) FindFailedNotification() NotificationResult {
-	e := s.err
-
-	for cursor := s.b.Back(); cursor != nil; cursor = cursor.Prev() {
+func (b *buffer) FindFailedNotification(e Error) NotificationResult {
+	for cursor := b.Back(); cursor != nil; cursor = cursor.Prev() {
 		// Get serialized notification
 		n, _ := cursor.Value.(Notification)
 
@@ -56,18 +54,13 @@ func (s *session) FindFailedNotification() NotificationResult {
 }
 
 // RequeueableNotifications returns good notifications sent after an error.
-func (s *session) RequeueableNotifications() []Notification {
+func (b *buffer) RequeueableNotifications(identifier uint32) []Notification {
 	notifs := []Notification{}
-
-	// If still connected, return nothing
-	if s.st != sessionStateDisconnected {
-		return notifs
-	}
 
 	// Walk back to last known good notification and return the slice
 	var e *list.Element
-	for e = s.b.Front(); e != nil; e = e.Next() {
-		if n, ok := e.Value.(Notification); ok && n.Identifier == s.err.Identifier {
+	for e = b.Front(); e != nil; e = e.Next() {
+		if n, ok := e.Value.(Notification); ok && n.Identifier == identifier {
 			break
 		}
 	}

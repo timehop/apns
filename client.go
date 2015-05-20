@@ -68,7 +68,15 @@ func (c *Client) reconnectAndRequeue() {
 	// Pull off undelivered notifications
 	notifs := c.sess.RequeueableNotifications()
 
-	// Reconnect
+	c.reconnect()
+
+	for _, n := range notifs {
+		// TODO handle error from sending
+		c.sess.Send(n)
+	}
+}
+
+func (c *Client) reconnect() {
 	c.sess = nil
 
 	for c.sess == nil {
@@ -85,13 +93,9 @@ func (c *Client) reconnectAndRequeue() {
 
 		c.sess = sess
 	}
-
-	for _, n := range notifs {
-		// TODO handle error from sending
-		c.sess.Send(n)
-	}
 }
 
+// newSession for altering in tests
 var newSession = func(c Conn) Session {
 	return NewSession(c)
 }
