@@ -89,7 +89,4 @@ var _ = Describe("Session", func() {
 
 	Describe("Disconnect", func() {
 	})
-
-	Describe("RequeueableNotifications", func() {
-	})
 })
