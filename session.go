@@ -66,9 +66,6 @@ type session struct {
 	st  sessionState
 	stm sync.Mutex
 
-	id  uint32
-	idm sync.Mutex
-
 	err NotificationResult
 }
 
@@ -79,7 +76,6 @@ func NewSession(conn Conn) Session {
 		stm:   sync.Mutex{},
 		conn:  conn,
 		connm: sync.Mutex{},
-		idm:   sync.Mutex{},
 		b:     newBuffer(50),
 	}
 }
@@ -123,9 +119,6 @@ func (s *session) Send(n Notification) error {
 	if !s.Connected() {
 		return errors.New("not connected")
 	}
-
-	// Set identifier if not specified
-	n.Identifier = s.determineIdentifier(n.Identifier)
 
 	// Serialize
 	b, err := n.ToBinary()
@@ -193,22 +186,6 @@ func (s *session) transitionState(st sessionState) {
 	defer s.stm.Unlock()
 
 	s.st = st
-}
-
-func (s *session) determineIdentifier(n uint32) uint32 {
-	s.idm.Lock()
-	defer s.idm.Unlock()
-
-	// If the id passed in is 0, that means it wasn't
-	// set so get the next ID. Otherwise, set it to that
-	// identifier.
-	if n == 0 {
-		s.id++
-	} else {
-		s.id = n
-	}
-
-	return s.id
 }
 
 func (s *session) readErrors() {
