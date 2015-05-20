@@ -163,7 +163,10 @@ func (n Notification) ToBinary() ([]byte, error) {
 		return b, fmt.Errorf("convert token to hex error: %s", err)
 	}
 
-	j, _ := json.Marshal(n.Payload)
+	j, err := json.Marshal(n.Payload)
+	if err != nil {
+		return b, fmt.Errorf("json marshal error: %s", err)
+	}
 
 	buf := bytes.NewBuffer(b)
 
