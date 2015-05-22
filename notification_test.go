@@ -187,6 +187,16 @@ var _ = Describe("Notifications", func() {
 				Expect(j).To(Equal([]byte(`{}`)))
 			})
 		})
+		Context("email account id", func() {
+			It("should contain the account id", func() {
+				a := apns.APS{AccountId: "1234"}
+
+				j, err := json.Marshal(a)
+
+				Expect(err).To(BeNil())
+				Expect(j).To(Equal([]byte(`{"account-id":"1234"}`)))
+			})
+		})
 	})
 
 	Describe("Notification", func() {

@@ -63,6 +63,7 @@ type APS struct {
 	ContentAvailable int
 	URLArgs          []string
 	Category         string // requires iOS 8+
+	AccountId        string // for email push notifications
 }
 
 func (aps APS) MarshalJSON() ([]byte, error) {
@@ -89,6 +90,9 @@ func (aps APS) MarshalJSON() ([]byte, error) {
 	}
 	if aps.URLArgs != nil && len(aps.URLArgs) != 0 {
 		data["url-args"] = aps.URLArgs
+	}
+	if aps.AccountId != "" {
+		data["account-id"] = aps.AccountId
 	}
 
 	return json.Marshal(data)
