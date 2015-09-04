@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 
+	"apns"
+
 	"github.com/timehop/apns"
 )
 
@@ -28,7 +30,7 @@ func main() {
 
 		p := apns.NewPayload()
 		p.APS.Alert.Body = body
-		p.APS.Badge = &badge
+		p.APS.Badge = apns.NewBadgeNumber(badge)
 
 		p.SetCustomValue("link", "yourapp://precache/20140718")
 
