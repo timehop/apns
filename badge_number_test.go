@@ -1,10 +1,11 @@
-package apns
+package apns_test
 
 import (
 	"encoding/json"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/timehop/apns"
 )
 
 var _ = Describe("BadgeNumber", func() {
