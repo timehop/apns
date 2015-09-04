@@ -1,10 +1,9 @@
 package main
 
 import (
+	"apns"
 	"fmt"
 	"log"
-
-	"apns"
 
 	"github.com/timehop/apns"
 )
