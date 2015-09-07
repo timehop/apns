@@ -18,7 +18,7 @@ func main() {
 		fmt.Print("Enter '<token> <badge> <msg>': ")
 
 		var tok, body string
-		var badge int
+		var badge uint
 
 		_, err := fmt.Scanf("%s %d %s", &tok, &badge, &body)
 		if err != nil {
@@ -28,7 +28,7 @@ func main() {
 
 		p := apns.NewPayload()
 		p.APS.Alert.Body = body
-		p.APS.Badge = apns.NewBadgeNumber(badge)
+		p.APS.Badge.Set(badge)
 
 		p.SetCustomValue("link", "yourapp://precache/20140718")
 

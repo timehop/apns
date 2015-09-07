@@ -12,8 +12,8 @@ var _ = Describe("BadgeNumber", func() {
 	Describe("Defaults", func() {
 		It("Should have the proper default values", func() {
 			b := apns.BadgeNumber{}
-			Expect(b.Number).To(Equal(0))
-			Expect(b.Valid).To(BeFalse())
+			Expect(b.Number).To(Equal(uint(0)))
+			Expect(b.IsSet).To(BeFalse())
 		})
 	})
 
@@ -22,16 +22,16 @@ var _ = Describe("BadgeNumber", func() {
 
 		Context("with an argument", func() {
 			It("should have values set properly", func() {
-				b = apns.NewBadgeNumber(5)
-				Expect(b.Valid).To(BeTrue())
-				Expect(b.Number).To(Equal(5))
+				b.Set(5)
+				Expect(b.IsSet).To(BeTrue())
+				Expect(b.Number).To(Equal(uint(5)))
 			})
 		})
 		Context("when unset", func() {
 			It("should reset its values", func() {
 				b.Unset()
-				Expect(b.Valid).To(BeFalse())
-				Expect(b.Number).To(Equal(0))
+				Expect(b.IsSet).To(BeFalse())
+				Expect(b.Number).To(Equal(uint(0)))
 			})
 		})
 	})
@@ -44,16 +44,20 @@ var _ = Describe("BadgeNumber", func() {
 
 		Context("when marshalling", func() {
 			It("should not error", func() {
+				bn := apns.BadgeNumber{}
+				bn.Set(10)
 				_, err := json.Marshal(BadgeNumbers{
-					A: apns.NewBadgeNumber(10),
+					A: bn,
 				})
 				Expect(err).To(BeNil())
 			})
 			It("should create the proper values", func() {
-				bn := BadgeNumbers{
-					A: apns.NewBadgeNumber(10),
+				bn := apns.BadgeNumber{}
+				bn.Set(10)
+				bns := BadgeNumbers{
+					A: bn,
 				}
-				b, _ := json.Marshal(bn)
+				b, _ := json.Marshal(bns)
 				expected := "{\"a\":10,\"b\":0}"
 				Expect(string(b)).To(Equal(expected))
 			})
@@ -68,11 +72,11 @@ var _ = Describe("BadgeNumber", func() {
 			})
 			It("should populate the struct properly", func() {
 				json.Unmarshal([]byte("{\"a\":10,\"b\":0}"), &bnumbers)
-				Expect(bnumbers.A.Valid).To(BeTrue())
-				Expect(bnumbers.B.Valid).To(BeTrue())
+				Expect(bnumbers.A.IsSet).To(BeTrue())
+				Expect(bnumbers.B.IsSet).To(BeTrue())
 
-				Expect(bnumbers.A.Number).To(Equal(10))
-				Expect(bnumbers.B.Number).To(Equal(0))
+				Expect(bnumbers.A.Number).To(Equal(uint(10)))
+				Expect(bnumbers.B.Number).To(Equal(uint(0)))
 			})
 		})
 	})

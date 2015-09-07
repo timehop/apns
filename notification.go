@@ -75,7 +75,7 @@ func (aps APS) MarshalJSON() ([]byte, error) {
 			data["alert"] = aps.Alert
 		}
 	}
-	if aps.Badge.Valid {
+	if aps.Badge.IsSet {
 		data["badge"] = aps.Badge
 	}
 	if aps.Sound != "" {

@@ -168,7 +168,8 @@ var _ = Describe("Notifications", func() {
 	Describe("APS", func() {
 		Context("badge with a zero (clears notifications)", func() {
 			It("should contain zero", func() {
-				bn := apns.NewBadgeNumber(0)
+				bn := apns.BadgeNumber{}
+				bn.Set(0)
 				a := apns.APS{Badge: bn}
 
 				j, err := json.Marshal(a)
