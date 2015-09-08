@@ -34,8 +34,7 @@ c, _ := apns.NewClient(apns.ProductionGateway, apnsCert, apnsKey)
 
 p := apns.NewPayload()
 p.APS.Alert.Body = "I am a push notification!"
-badge := apns.NewBadgeNumber(5)
-p.APS.Badge = badge
+p.APS.Badge.Set(5)
 p.APS.Sound = "turn_down_for_what.aiff"
 
 m := apns.NewNotification()
@@ -62,8 +61,7 @@ go func() {
 
 p := apns.NewPayload()
 p.APS.Alert.Body = "I am a push notification!"
-badge := apns.NewBadgeNumber(5)
-p.APS.Badge = badge
+p.APS.Badge.Set(5)
 p.APS.Sound = "turn_down_for_what.aiff"
 p.APS.ContentAvailable = 1
 

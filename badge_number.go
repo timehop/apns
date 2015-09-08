@@ -38,19 +38,16 @@ func (b BadgeNumber) MarshalJSON() ([]byte, error) {
 // that if the unmarshaller gets here, there is a
 // number to unmarshal and it's valid
 func (b *BadgeNumber) UnmarshalJSON(data []byte) error {
-	var val uint
-	err := json.Unmarshal(data, &val)
+	err := json.Unmarshal(data, &b.Number)
 	if err != nil {
 		return err
-	} else {
-		b.Number = val
-
-		// Since the point of this type is to
-		// allow proper inclusion of 0 for int
-		// types while respecting omitempty,
-		// assume that set==true if there is
-		// a value to unmarshal
-		b.IsSet = true
-		return nil
 	}
+
+	// Since the point of this type is to
+	// allow proper inclusion of 0 for int
+	// types while respecting omitempty,
+	// assume that set==true if there is
+	// a value to unmarshal
+	b.IsSet = true
+	return nil
 }
