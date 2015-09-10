@@ -58,7 +58,7 @@ func (a *Alert) isZero() bool {
 
 type APS struct {
 	Alert            Alert
-	Badge            *int // 0 to clear notifications, nil to leave as is.
+	Badge            BadgeNumber
 	Sound            string
 	ContentAvailable int
 	URLArgs          []string
@@ -76,7 +76,7 @@ func (aps APS) MarshalJSON() ([]byte, error) {
 			data["alert"] = aps.Alert
 		}
 	}
-	if aps.Badge != nil {
+	if aps.Badge.IsSet {
 		data["badge"] = aps.Badge
 	}
 	if aps.Sound != "" {
