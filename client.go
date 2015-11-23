@@ -152,11 +152,6 @@ func (c *Client) runLoop() {
 			var err error
 			var n Notification
 
-			// Check for notifications or errors. There is a chance we'll send notifications
-			// if we already have an error since `select` will "pseudorandomly" choose a
-			// ready channels. It turns out to be fine because the connection will already
-			// be closed and it'll requeue. We could check before we get to this select
-			// block, but it doesn't seem worth the extra code and complexity.
 			select {
 			case err = <-errs:
 			case n = <-c.notifs:
@@ -168,8 +163,9 @@ func (c *Client) runLoop() {
 					break
 				default:
 					now := time.Now().Unix()
-					if now-c.activeTime > connectionMaxWaitSeconds {
-						log.Printf("Connection idled %d seconds, reconnecting...\n", now-c.activeTime)
+					gap := now - c.activeTime
+					if gap > connectionMaxWaitSeconds {
+						log.Printf("Connection idled %d seconds, reconnecting...\n", gap)
 						go func() {
 							c.notifs <- n
 						}()
