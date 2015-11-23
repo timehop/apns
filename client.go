@@ -37,6 +37,7 @@ type Client struct {
 	notifs       chan Notification
 	id           uint32
 	activeTime   int64
+	numSent      uint64
 }
 
 func newClientWithConn(gw string, conn Conn) Client {
@@ -139,6 +140,7 @@ func (c *Client) runLoop() {
 			continue
 		} else {
 			c.activeTime = time.Now().Unix()
+			c.numSent = 0
 		}
 
 		// Start reading errors from APNS
@@ -172,6 +174,7 @@ func (c *Client) runLoop() {
 						break receiver
 					} else {
 						c.activeTime = now
+						c.numSent++
 					}
 				}
 			}
@@ -204,8 +207,9 @@ func (c *Client) runLoop() {
 				continue
 			}
 
-			_, err = c.Conn.Write(b)
+			log.Printf("Sending #%d notification in this connection\n", c.numSent)
 
+			_, err = c.Conn.Write(b)
 			if err == io.EOF {
 				log.Println("EOF trying to write notification")
 				break
