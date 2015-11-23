@@ -8,6 +8,10 @@ import (
 	"time"
 )
 
+const (
+	connectionMaxWaitSeconds = 300
+)
+
 type buffer struct {
 	size int
 	*list.List
@@ -30,9 +34,9 @@ func (b *buffer) Add(v interface{}) *list.Element {
 type Client struct {
 	Conn         *Conn
 	FailedNotifs chan NotificationResult
-
-	notifs chan Notification
-	id     uint32
+	notifs       chan Notification
+	id           uint32
+	activeTime   int64
 }
 
 func newClientWithConn(gw string, conn Conn) Client {
@@ -133,6 +137,8 @@ func (c *Client) runLoop() {
 			// TODO Probably want to exponentially backoff...
 			time.Sleep(1 * time.Second)
 			continue
+		} else {
+			c.activeTime = time.Now().Unix()
 		}
 
 		// Start reading errors from APNS
@@ -141,6 +147,7 @@ func (c *Client) runLoop() {
 		c.requeue(cursor)
 
 		// Connection open, listen for notifs and errors
+	receiver:
 		for {
 			var err error
 			var n Notification
@@ -153,6 +160,13 @@ func (c *Client) runLoop() {
 			select {
 			case err = <-errs:
 			case n = <-c.notifs:
+				now := time.Now().Unix()
+				if now-c.activeTime > connectionMaxWaitSeconds {
+					log.Printf("Connection idled %d seconds, reconnecting...\n", now-c.activeTime)
+					break receiver
+				} else {
+					c.activeTime = now
+				}
 			}
 
 			// If there is an error we understand, find the notification that failed,
