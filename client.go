@@ -160,12 +160,23 @@ func (c *Client) runLoop() {
 			select {
 			case err = <-errs:
 			case n = <-c.notifs:
-				now := time.Now().Unix()
-				if now-c.activeTime > connectionMaxWaitSeconds {
-					log.Printf("Connection idled %d seconds, reconnecting...\n", now-c.activeTime)
-					break receiver
-				} else {
-					c.activeTime = now
+				select {
+				case err = <-errs:
+					go func() {
+						c.notifs <- n
+					}()
+					break
+				default:
+					now := time.Now().Unix()
+					if now-c.activeTime > connectionMaxWaitSeconds {
+						log.Printf("Connection idled %d seconds, reconnecting...\n", now-c.activeTime)
+						go func() {
+							c.notifs <- n
+						}()
+						break receiver
+					} else {
+						c.activeTime = now
+					}
 				}
 			}
 
