@@ -5,11 +5,16 @@ import (
 	"crypto/tls"
 	"io"
 	"log"
+	"sync/atomic"
 	"time"
 )
 
 const (
 	connectionMaxWaitSeconds = 300
+)
+
+var (
+	atomicId int32 = 0
 )
 
 type buffer struct {
@@ -38,6 +43,7 @@ type Client struct {
 	id           uint32
 	activeTime   int64
 	numSent      uint64
+	clientId     int32
 }
 
 func newClientWithConn(gw string, conn Conn) Client {
@@ -46,6 +52,7 @@ func newClientWithConn(gw string, conn Conn) Client {
 		FailedNotifs: make(chan NotificationResult),
 		id:           uint32(1),
 		notifs:       make(chan Notification),
+		clientId:     atomic.AddInt32(&atomicId, 1),
 	}
 
 	go c.runLoop()
@@ -207,7 +214,7 @@ func (c *Client) runLoop() {
 				continue
 			}
 
-			log.Printf("Sending #%d notification in this connection\n", c.numSent)
+			log.Printf("Sending #%d notification in #%d connection\n", c.numSent, c.clientId)
 
 			_, err = c.Conn.Write(b)
 			if err == io.EOF {
