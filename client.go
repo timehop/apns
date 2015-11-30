@@ -197,9 +197,6 @@ func (c *Client) runLoop() {
 				break
 			}
 
-			// Add to list
-			cursor = sent.Add(n)
-
 			// Set identifier if not specified
 			if n.Identifier == 0 {
 				n.Identifier = c.id
@@ -207,6 +204,9 @@ func (c *Client) runLoop() {
 			} else if c.id < n.Identifier {
 				c.id = n.Identifier + 1
 			}
+
+			// Add to list
+			cursor = sent.Add(n)
 
 			b, err := n.ToBinary()
 			if err != nil {
@@ -237,14 +237,13 @@ func readErrs(c *Conn) chan error {
 
 	go func() {
 		p := make([]byte, 6, 6)
-		_, err := c.Read(p)
-		if err != nil {
+		n, err := c.Read(p)
+		if n > 0 {
+			e := NewError(p)
+			errs <- &e
+		} else if err != nil {
 			errs <- err
-			return
 		}
-
-		e := NewError(p)
-		errs <- &e
 	}()
 
 	return errs
