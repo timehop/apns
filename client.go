@@ -164,25 +164,17 @@ func (c *Client) runLoop() {
 			select {
 			case err = <-errs:
 			case n = <-c.notifs:
-				select {
-				case err = <-errs:
+				now := time.Now().Unix()
+				gap := now - c.activeTime
+				if gap > connectionMaxWaitSeconds {
+					log.Printf("#%d connection idled %d seconds, reconnecting...\n", c.clientId, gap)
 					go func() {
 						c.notifs <- n
 					}()
-					break
-				default:
-					now := time.Now().Unix()
-					gap := now - c.activeTime
-					if gap > connectionMaxWaitSeconds {
-						log.Printf("Connection idled %d seconds, reconnecting...\n", gap)
-						go func() {
-							c.notifs <- n
-						}()
-						break receiver
-					} else {
-						c.activeTime = now
-						c.numSent++
-					}
+					break receiver
+				} else {
+					c.activeTime = now
+					c.numSent++
 				}
 			}
 
@@ -216,14 +208,16 @@ func (c *Client) runLoop() {
 
 			log.Printf("Sending #%d notification in #%d connection\n", c.numSent, c.clientId)
 
-			_, err = c.Conn.Write(b)
+			written, err := c.Conn.Write(b)
 			if err == io.EOF {
-				log.Println("EOF trying to write notification")
+				log.Printf("EOF trying to write notification in #%d connection\n", c.clientId)
 				break
-			}
-
-			if err != nil {
-				log.Println("err writing to apns", err.Error())
+			} else if err != nil {
+				log.Printf("Error writing to apns %s in #%d connection", err.Error(), c.clientId)
+				break
+			} else if written < len(b) {
+				log.Printf("Error: partial notification was written in #%d connection, notification id: %s\n",
+					c.clientId, n.ID)
 				break
 			}
 

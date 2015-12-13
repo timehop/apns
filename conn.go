@@ -2,8 +2,10 @@ package apns
 
 import (
 	"crypto/tls"
+	"log"
 	"net"
 	"strings"
+	"time"
 )
 
 const (
@@ -12,6 +14,8 @@ const (
 
 	ProductionFeedbackGateway = "feedback.push.apple.com:2196"
 	SandboxFeedbackGateway    = "feedback.sandbox.push.apple.com:2196"
+
+	writeTimeout = 10 * time.Second
 )
 
 // Conn is a wrapper for the actual TLS connections made to Apple
@@ -60,7 +64,7 @@ func (c *Conn) Connect() error {
 		c.NetConn.Close()
 	}
 
-	conn, err := net.Dial("tcp", c.gateway)
+	conn, err := net.DialTimeout("tcp", c.gateway, writeTimeout)
 	if err != nil {
 		return err
 	}
@@ -91,5 +95,10 @@ func (c *Conn) Read(p []byte) (int, error) {
 
 // Write writes data from the connection
 func (c *Conn) Write(p []byte) (int, error) {
-	return c.NetConn.Write(p)
+	if err := c.NetConn.SetWriteDeadline(time.Now().Add(writeTimeout)); err != nil {
+		log.Println("Error on setting write deadline in connection")
+		return 0, err
+	} else {
+		return c.NetConn.Write(p)
+	}
 }
