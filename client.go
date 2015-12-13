@@ -84,6 +84,10 @@ func NewClientWithFiles(gw string, certFile string, keyFile string) (Client, err
 	return newClientWithConn(gw, conn), nil
 }
 
+func (c *Client) GetId() int32 {
+	return c.clientId
+}
+
 func (c *Client) Send(n Notification) error {
 	c.notifs <- n
 	return nil
@@ -206,7 +210,7 @@ func (c *Client) runLoop() {
 				continue
 			}
 
-			log.Printf("Sending #%d notification in #%d connection\n", c.numSent, c.clientId)
+			log.Printf("Sending #%d notification (id: %s) in #%d connection\n", c.numSent, n.ID, c.clientId)
 
 			written, err := c.Conn.Write(b)
 			if err == io.EOF {
