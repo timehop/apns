@@ -2,7 +2,6 @@ package apns
 
 import (
 	"crypto/tls"
-	"log"
 	"net"
 	"strings"
 	"time"
@@ -95,11 +94,5 @@ func (c *Conn) Read(p []byte) (int, error) {
 
 // Write writes data from the connection
 func (c *Conn) Write(p []byte) (int, error) {
-	// TODO: maybe we don't need this, because write just write the data into the kernel buffer
-	if err := c.NetConn.SetWriteDeadline(time.Now().Add(writeTimeout)); err != nil {
-		log.Println("Error on setting write deadline in connection")
-		return 0, err
-	} else {
-		return c.NetConn.Write(p)
-	}
+	return c.NetConn.Write(p)
 }
