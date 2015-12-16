@@ -147,7 +147,7 @@ func (c *Client) runLoop() {
 		err := c.Conn.Connect()
 		if err != nil {
 			// TODO Probably want to exponentially backoff...
-			time.Sleep(1 * time.Second)
+			time.Sleep(time.Second)
 			continue
 		} else {
 			c.activeTime = time.Now().Unix()
