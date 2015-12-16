@@ -68,6 +68,10 @@ func (c *Conn) Connect() error {
 		return err
 	}
 
+	if tcpconn, ok := conn.(*net.TCPConn); ok {
+		tcpconn.SetKeepAlive(true)
+	}
+
 	tlsConn := tls.Client(conn, c.Conf)
 	err = tlsConn.Handshake()
 	if err != nil {
