@@ -72,13 +72,7 @@ func (c *Conn) Connect() error {
 		tcpconn.SetKeepAlive(true)
 	}
 
-	tlsConn := tls.Client(conn, c.Conf)
-	err = tlsConn.Handshake()
-	if err != nil {
-		return err
-	}
-
-	c.NetConn = tlsConn
+	c.NetConn = tls.Client(conn, c.Conf)
 	return nil
 }
 
