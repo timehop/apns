@@ -127,8 +127,8 @@ func (c *Client) handleError(err *Error, buffer *buffer) *list.Element {
 			go c.reportFailedPush(cursor.Value, err)
 
 			next := cursor.Next()
-
 			buffer.Remove(cursor)
+
 			return next
 		}
 
@@ -146,7 +146,6 @@ func (c *Client) runLoop() {
 	for {
 		err := c.Conn.Connect()
 		if err != nil {
-			// TODO Probably want to exponentially backoff...
 			time.Sleep(time.Second)
 			continue
 		} else {
@@ -160,7 +159,6 @@ func (c *Client) runLoop() {
 		c.requeue(cursor)
 
 		// Connection open, listen for notifs and errors
-	receiver:
 		for {
 			var err error
 			var n Notification
@@ -170,16 +168,9 @@ func (c *Client) runLoop() {
 			case n = <-c.notifs:
 				now := time.Now().Unix()
 				gap := now - c.activeTime
-				if gap > connectionMaxWaitSeconds {
-					log.Printf("#%d connection idled %d seconds, reconnecting...\n", c.clientId, gap)
-					go func() {
-						c.notifs <- n
-					}()
-					break receiver
-				} else {
-					c.activeTime = now
-					c.numSent++
-				}
+				log.Printf("#%d connection idled %d seconds\n", c.clientId, gap)
+				c.activeTime = now
+				c.numSent++
 			}
 
 			// If there is an error we understand, find the notification that failed,
