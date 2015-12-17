@@ -14,7 +14,7 @@ const (
 	ProductionFeedbackGateway = "feedback.push.apple.com:2196"
 	SandboxFeedbackGateway    = "feedback.sandbox.push.apple.com:2196"
 
-	writeTimeout = 10 * time.Second
+	timeout = 10 * time.Second
 )
 
 // Conn is a wrapper for the actual TLS connections made to Apple
@@ -63,7 +63,7 @@ func (c *Conn) Connect() error {
 		c.NetConn.Close()
 	}
 
-	conn, err := net.DialTimeout("tcp", c.gateway, writeTimeout)
+	conn, err := net.DialTimeout("tcp", c.gateway, timeout)
 	if err != nil {
 		return err
 	}
