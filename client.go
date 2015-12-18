@@ -170,11 +170,13 @@ func (c *Client) runLoop() {
 			// If there is an error we understand, find the notification that failed,
 			// move the cursor right after it.
 			if nErr, ok := err.(*Error); ok {
+				log.Println("Known error:", err)
 				cursor = c.handleError(nErr, sent)
 				break
 			}
 
 			if err != nil {
+				log.Println("Error:", err)
 				break
 			}
 
