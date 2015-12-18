@@ -41,7 +41,6 @@ type Client struct {
 	FailedNotifs chan NotificationResult
 	notifs       chan Notification
 	id           uint32
-	activeTime   int64
 	numSent      uint64
 	clientId     int32
 }
@@ -149,7 +148,6 @@ func (c *Client) runLoop() {
 			time.Sleep(time.Second)
 			continue
 		} else {
-			c.activeTime = time.Now().Unix()
 			c.numSent = 0
 		}
 
@@ -166,10 +164,6 @@ func (c *Client) runLoop() {
 			select {
 			case err = <-errs:
 			case n = <-c.notifs:
-				now := time.Now().Unix()
-				gap := now - c.activeTime
-				log.Printf("#%d connection idled %d seconds\n", c.clientId, gap)
-				c.activeTime = now
 				c.numSent++
 			}
 
@@ -197,7 +191,7 @@ func (c *Client) runLoop() {
 
 			b, err := n.ToBinary()
 			if err != nil {
-				// TODO
+				log.Println("Error on converting notification to binary, error:", err)
 				continue
 			}
 
