@@ -176,7 +176,7 @@ func (c *Client) runLoop() {
 			}
 
 			if err != nil {
-				log.Println("Error:", err)
+				log.Println("Error on apns connection:", err)
 				break
 			}
 
