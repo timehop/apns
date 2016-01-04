@@ -41,7 +41,6 @@ type Client struct {
 	FailedNotifs chan NotificationResult
 	notifs       chan Notification
 	id           uint32
-	numSent      uint64
 	clientId     int32
 }
 
@@ -49,8 +48,8 @@ func newClientWithConn(gw string, conn Conn) Client {
 	c := Client{
 		Conn:         &conn,
 		FailedNotifs: make(chan NotificationResult),
-		id:           uint32(1),
 		notifs:       make(chan Notification),
+		id:           uint32(1),
 		clientId:     atomic.AddInt32(&atomicId, 1),
 	}
 
@@ -140,6 +139,7 @@ func (c *Client) handleError(err *Error, buffer *buffer) *list.Element {
 func (c *Client) runLoop() {
 	sent := newBuffer(50)
 	cursor := sent.Front()
+	numSent := uint64(0)
 
 	// APNS connection
 	for {
@@ -148,7 +148,7 @@ func (c *Client) runLoop() {
 			time.Sleep(time.Second)
 			continue
 		} else {
-			c.numSent = 0
+			numSent = 0
 		}
 
 		// Start reading errors from APNS
@@ -164,7 +164,7 @@ func (c *Client) runLoop() {
 			select {
 			case err = <-errs:
 			case n = <-c.notifs:
-				c.numSent++
+				numSent++
 			}
 
 			// If there is an error we understand, find the notification that failed,
@@ -197,7 +197,7 @@ func (c *Client) runLoop() {
 				continue
 			}
 
-			log.Printf("Sending #%d notification (id: %s) in #%d connection\n", c.numSent, n.ID, c.clientId)
+			log.Printf("Sending #%d notification (id: %s) in #%d connection\n", numSent, n.ID, c.clientId)
 
 			written, err := c.Conn.Write(b)
 			if err == io.EOF {
