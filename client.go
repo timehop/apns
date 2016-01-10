@@ -216,6 +216,7 @@ func readErrs(c *Conn) chan error {
 		_, err := c.Read(p)
 		if err != nil {
 			errs <- err
+			log.Printf("read err", err.Error())
 			return
 		}
 
