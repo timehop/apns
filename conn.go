@@ -105,9 +105,6 @@ func (c *Conn) Close() error {
 
 // Read reads data from the connection
 func (c *Conn) Read(p []byte) (int, error) {
-	if c.timeout > 0 {
-		c.NetConn.SetReadDeadline(time.Now().Add(c.timeout))
-	}
 	i, err := c.NetConn.Read(p)
 	return i, err
 }
