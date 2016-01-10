@@ -48,10 +48,13 @@ func newClientWithConn(gw string, conn Conn) Client {
 	return c
 }
 
-func NewClientWithCert(gw string, cert tls.Certificate) Client {
-	conn := NewConnWithCert(gw, cert)
-
+func NewClietWithCertTimeout(gw string, cert tls.Certificate, timeout int) Client {
+	conn := NewConnWithCertTimeout(gw, cert, timeout)
 	return newClientWithConn(gw, conn)
+}
+
+func NewClientWithCert(gw string, cert tls.Certificate) Client {
+	return NewClietWithCertTimeout(gw, cert, 0)
 }
 
 func NewClient(gw string, cert string, key string) (Client, error) {
@@ -132,6 +135,7 @@ func (c *Client) runLoop() {
 		if err != nil {
 			// TODO Probably want to exponentially backoff...
 			time.Sleep(1 * time.Second)
+			log.Println("err connecting to apns ", err.Error())
 			continue
 		}
 
