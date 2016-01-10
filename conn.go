@@ -66,7 +66,13 @@ func (c *Conn) Connect() error {
 		c.NetConn.Close()
 	}
 
-	conn, err := net.DialTimeout("tcp", c.gateway, c.timeout)
+	var conn net.Conn
+	var err error
+	if c.timeout > 0 {
+		conn, err = net.DialTimeout("tcp", c.gateway, c.timeout)
+	} else {
+		conn, err = net.Dial("tcp", c.gateway)
+	}
 	if err != nil {
 		return err
 	}
@@ -79,7 +85,6 @@ func (c *Conn) Connect() error {
 	if err != nil {
 		return err
 	}
-	tlsConn.SetDeadline(time.Time{})
 
 	c.NetConn = tlsConn
 	return nil
