@@ -66,13 +66,17 @@ func NewClient(gw string, cert string, key string) (Client, error) {
 	return newClientWithConn(gw, conn), nil
 }
 
-func NewClientWithFiles(gw string, certFile string, keyFile string) (Client, error) {
-	conn, err := NewConnWithFiles(gw, certFile, keyFile)
+func NewClientWithFilesTimeout(gw string, certFile string, keyFile string, timeout int) (Client, error) {
+	conn, err := NewConnWithFilesTimeout(gw, certFile, keyFile, timeout)
 	if err != nil {
 		return Client{}, err
 	}
 
 	return newClientWithConn(gw, conn), nil
+}
+
+func NewClientWithFiles(gw string, certFile string, keyFile string) (Client, error) {
+	return NewClientWithFilesTimeout(gw, certFile, keyFile, 0)
 }
 
 func (c *Client) Send(n Notification) error {
