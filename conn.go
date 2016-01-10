@@ -79,6 +79,7 @@ func (c *Conn) Connect() error {
 	if err != nil {
 		return err
 	}
+	tlsConn.SetDeadline(time.Time{})
 
 	c.NetConn = tlsConn
 	return nil
