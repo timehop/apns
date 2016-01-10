@@ -213,6 +213,7 @@ func readErrs(c *Conn) chan error {
 
 	go func() {
 		p := make([]byte, 6, 6)
+		c.NetConn.SetReadDeadline(time.Time{})
 		_, err := c.Read(p)
 		if err != nil {
 			errs <- err
