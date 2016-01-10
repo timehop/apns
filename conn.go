@@ -50,13 +50,18 @@ func NewConn(gw string, crt string, key string) (Conn, error) {
 }
 
 // NewConnWithFiles creates a new Conn from certificate and key in the specified files
-func NewConnWithFiles(gw string, certFile string, keyFile string) (Conn, error) {
+func NewConnWithFilesTimeout(gw string, certFile string, keyFile string, timeout int) (Conn, error) {
 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
 		return Conn{}, err
 	}
 
-	return NewConnWithCert(gw, cert), nil
+	return NewConnWithCertTimeout(gw, cert, timeout), nil
+}
+
+// NewConnWithFiles creates a new Conn from certificate and key in the specified files
+func NewConnWithFiles(gw string, certFile string, keyFile string) (Conn, error) {
+	return NewConnWithFilesTimeout(gw, certFile, keyFile, 0)
 }
 
 // Connect actually creates the TLS connection
