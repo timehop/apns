@@ -48,7 +48,7 @@ c.Send(m)
 ### Sending a push notification with error handling
 
 ```go
-    c, err := apns.NewClientWithFiles(apns.ProductionGateway, cert.pem, key.pem)
+    c, err := apns.NewClientWithFiles(apns.ProductionGateway, "cert.pem", "key.pem")
     if err != nil {
         log.Fatal("could not create new client", err.Error())
     }
