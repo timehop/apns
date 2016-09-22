@@ -48,34 +48,34 @@ c.Send(m)
 ### Sending a push notification with error handling
 
 ```go
-c, err := apns.NewClient(apns.ProductionGateway, apnsCert, apnsKey)
-if err != nil {
-	log.Fatal("could not create new client", err.Error()
-}
+    c, err := apns.NewClientWithFiles(apns.ProductionGateway, "cert.pem", "key.pem")
+    if err != nil {
+        log.Fatal("could not create new client", err.Error())
+    }
 
-go func() {
-	for f := range c.FailedNotifs {
-		fmt.Println("Notif", f.Notif.ID, "failed with", f.Err.Error())
-	}
-}()
+    go func() {
+        for f := range c.FailedNotifs {
+            fmt.Println("Notif", f.Notif.ID, "failed with", f.Err.Error())
+        }
+    }()
 
-p := apns.NewPayload()
-p.APS.Alert.Body = "I am a push notification!"
-p.APS.Badge.Set(5)
-p.APS.Sound = "turn_down_for_what.aiff"
-p.APS.ContentAvailable = 1
+    p := apns.NewPayload()
+    p.APS.Alert.Body = "I am a push notification!"
+    p.APS.Badge.Set(5)
+    p.APS.Sound = "turn_down_for_what.aiff"
+    p.APS.ContentAvailable = 1
 
-p.SetCustomValue("link", "zombo://dot/com")
-p.SetCustomValue("game", map[string]int{"score": 234})
+    p.SetCustomValue("link", "zombo://dot/com")
+    p.SetCustomValue("game", map[string]int{"score": 234})
 
-m := apns.NewNotification()
-m.Payload = p
-m.DeviceToken = "A_DEVICE_TOKEN"
-m.Priority = apns.PriorityImmediate
-m.Identifier = 12312, // Integer for APNS
-m.ID = "user_id:timestamp", // ID not sent to Apple – to identify error notifications
+    m := apns.NewNotification()
+    m.Payload = p
+    m.DeviceToken = "A_DEVICE_TOKEN"
+    m.Priority = apns.PriorityImmediate
+    m.Identifier = 12312       // Integer for APNS
+    m.ID = "user_id:timestamp" // ID not sent to Apple – to identify error notifications
 
-c.Send(m)
+    c.Send(m)
 ```
 
 ### Retrieving feedback
