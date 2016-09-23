@@ -10,10 +10,10 @@ import (
 func main() {
 	c, err := apns.NewClientWithFiles(apns.ProductionGateway, "apns.crt", "apns.key")
 	if err != nil {
-		log.Fatal("Could not create client", err.Error())
+		log.Fatal("Could not create client: ", err.Error())
 	}
 
-	i := 0
+	i := 1
 	for {
 		fmt.Print("Enter '<token> <badge> <msg>': ")
 

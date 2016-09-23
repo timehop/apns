@@ -5,19 +5,35 @@ import (
 	"encoding/binary"
 )
 
+var (
+	// ErrUnrecognizedErrorResponse when the error from Apple isn't recognized.
+	ErrUnrecognizedErrorResponse = "Unrecognized error or no error."
+)
+
 const (
 	// Error strings based on the codes specified here:
 	// https://developer.apple.com/library/ios/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/Chapters/CommunicatingWIthAPS.html#//apple_ref/doc/uid/TP40008194-CH101-SW12
-	ErrProcessing         = "Processing error"
+
+	// ErrProcessing (1)
+	ErrProcessing = "Processing error"
+	// ErrMissingDeviceToken (2)
 	ErrMissingDeviceToken = "Missing device token"
-	ErrMissingTopic       = "Missing topic"
-	ErrMissingPayload     = "Missing payload"
-	ErrInvalidTokenSize   = "Invalid token size"
-	ErrInvalidTopicSize   = "Invalid topic size"
+	// ErrMissingTopic (3)
+	ErrMissingTopic = "Missing topic"
+	// ErrMissingPayload (4) when no payload.
+	ErrMissingPayload = "Missing payload"
+	// ErrInvalidTokenSize (5) for a device token that is the wrong size.
+	ErrInvalidTokenSize = "Invalid token size"
+	// ErrInvalidTopicSize (6)
+	ErrInvalidTopicSize = "Invalid topic size"
+	// ErrInvalidPayloadSize (7) for a payload over 2 KB.
 	ErrInvalidPayloadSize = "Invalid payload size"
-	ErrInvalidToken       = "Invalid token"
-	ErrShutdown           = "Shutdown"
-	ErrUnknown            = "None (unknown)"
+	// ErrInvalidToken (8) such as a production device token used with the sandbox gateway.
+	ErrInvalidToken = "Invalid token"
+	// ErrShutdown (10) closed connection to perform maintenance. Open a new connection.
+	ErrShutdown = "Shutdown"
+	// ErrUnknown (255)
+	ErrUnknown = "None (unknown)"
 )
 
 var errorMapping = map[uint8]string{
@@ -33,16 +49,18 @@ var errorMapping = map[uint8]string{
 	255: ErrUnknown,
 }
 
+// Error captures the error response read from Apple's Push Notification server.
 type Error struct {
-	Command    uint8
+	Command    uint8 // always should be 8
 	Status     uint8
 	Identifier uint32
 	ErrStr     string
 }
 
+// NewError parses an error from Apple.
 func NewError(p []byte) Error {
-	if len(p) != 1+1+4 {
-		return Error{ErrStr: ErrUnknown}
+	if len(p) != 6 {
+		return Error{ErrStr: ErrUnrecognizedErrorResponse}
 	}
 
 	r := bytes.NewBuffer(p)
@@ -54,7 +72,7 @@ func NewError(p []byte) Error {
 
 	var ok bool
 	if e.ErrStr, ok = errorMapping[e.Status]; !ok {
-		e.ErrStr = ErrUnknown
+		e.ErrStr = ErrUnrecognizedErrorResponse
 	}
 
 	return e

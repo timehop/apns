@@ -2,94 +2,109 @@ package apns
 
 import (
 	"crypto/tls"
+	"io"
 	"net"
 	"strings"
+	"time"
 )
 
 const (
+	// ProductionGateway is the host for Apple Push Notification server.
 	ProductionGateway = "gateway.push.apple.com:2195"
-	SandboxGateway    = "gateway.sandbox.push.apple.com:2195"
+	// SandboxGateway is Apple's gateway for development.
+	SandboxGateway = "gateway.sandbox.push.apple.com:2195"
 
+	// ProductionFeedbackGateway is Apple's feedback service.
 	ProductionFeedbackGateway = "feedback.push.apple.com:2196"
-	SandboxFeedbackGateway    = "feedback.sandbox.push.apple.com:2196"
+	// SandboxFeedbackGateway is Apple's feedback service for development.
+	SandboxFeedbackGateway = "feedback.sandbox.push.apple.com:2196"
 )
 
 // Conn is a wrapper for the actual TLS connections made to Apple
-type Conn struct {
-	NetConn net.Conn
-	Conf    *tls.Config
+type Conn interface {
+	io.ReadWriteCloser
+
+	Connect() error
+	SetReadDeadline(deadline time.Time) error
+}
+
+type conn struct {
+	netConn net.Conn
+	tls     *tls.Config
 
 	gateway   string
 	connected bool
 }
 
+// NewConnWithCert creates a new connection from a certificate.
 func NewConnWithCert(gw string, cert tls.Certificate) Conn {
 	gatewayParts := strings.Split(gw, ":")
-	conf := tls.Config{
-		Certificates: []tls.Certificate{cert},
-		ServerName:   gatewayParts[0],
+	tls := tls.Config{
+		Certificates:       []tls.Certificate{cert},
+		ServerName:         gatewayParts[0],
+		InsecureSkipVerify: true,
 	}
 
-	return Conn{gateway: gw, Conf: &conf}
+	return &conn{gateway: gw, tls: &tls}
 }
 
-// NewConnWithFiles creates a new Conn from certificate and key in the specified files
+// NewConn creates a new Conn from certificate and key pair.
 func NewConn(gw string, crt string, key string) (Conn, error) {
 	cert, err := tls.X509KeyPair([]byte(crt), []byte(key))
 	if err != nil {
-		return Conn{}, err
+		return &conn{}, err
 	}
 
 	return NewConnWithCert(gw, cert), nil
 }
 
-// NewConnWithFiles creates a new Conn from certificate and key in the specified files
+// NewConnWithFiles creates a new Conn from certificate and key in the specified files.
 func NewConnWithFiles(gw string, certFile string, keyFile string) (Conn, error) {
 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
-		return Conn{}, err
+		return &conn{}, err
 	}
 
 	return NewConnWithCert(gw, cert), nil
 }
 
 // Connect actually creates the TLS connection
-func (c *Conn) Connect() error {
+func (c *conn) Connect() error {
 	// Make sure the existing connection is closed
-	if c.NetConn != nil {
-		c.NetConn.Close()
+	if c.netConn != nil {
+		c.netConn.Close()
 	}
 
-	conn, err := net.Dial("tcp", c.gateway)
+	tlsConn, err := tls.Dial("tcp", c.gateway, c.tls)
 	if err != nil {
 		return err
 	}
 
-	tlsConn := tls.Client(conn, c.Conf)
-	err = tlsConn.Handshake()
-	if err != nil {
-		return err
-	}
-
-	c.NetConn = tlsConn
+	c.netConn = tlsConn
 	return nil
 }
 
-func (c *Conn) Close() error {
-	if c.NetConn != nil {
-		return c.NetConn.Close()
+// Close the connection.
+func (c *conn) Close() error {
+	if c.netConn != nil {
+		return c.netConn.Close()
 	}
 
 	return nil
 }
 
 // Read reads data from the connection
-func (c *Conn) Read(p []byte) (int, error) {
-	i, err := c.NetConn.Read(p)
-	return i, err
+func (c *conn) Read(p []byte) (int, error) {
+	return c.netConn.Read(p)
+}
+
+// SetReadDeadline sets the read deadline on the underlying connection.
+// A zero value for t means Read will not time out.
+func (c *conn) SetReadDeadline(deadline time.Time) error {
+	return c.netConn.SetReadDeadline(deadline)
 }
 
 // Write writes data from the connection
-func (c *Conn) Write(p []byte) (int, error) {
-	return c.NetConn.Write(p)
+func (c *conn) Write(p []byte) (int, error) {
+	return c.netConn.Write(p)
 }
