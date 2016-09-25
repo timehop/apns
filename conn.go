@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"net"
 	"strings"
+	"time"
 )
 
 const (
@@ -18,19 +19,24 @@ const (
 type Conn struct {
 	NetConn net.Conn
 	Conf    *tls.Config
+	timeout time.Duration
 
 	gateway   string
 	connected bool
 }
 
-func NewConnWithCert(gw string, cert tls.Certificate) Conn {
+func NewConnWithCertTimeout(gw string, cert tls.Certificate, timeout int) Conn {
 	gatewayParts := strings.Split(gw, ":")
 	conf := tls.Config{
 		Certificates: []tls.Certificate{cert},
 		ServerName:   gatewayParts[0],
 	}
 
-	return Conn{gateway: gw, Conf: &conf}
+	return Conn{gateway: gw, Conf: &conf, timeout: time.Duration(timeout) * time.Second}
+}
+
+func NewConnWithCert(gw string, cert tls.Certificate) Conn {
+	return NewConnWithCertTimeout(gw, cert, 0)
 }
 
 // NewConnWithFiles creates a new Conn from certificate and key in the specified files
@@ -44,13 +50,18 @@ func NewConn(gw string, crt string, key string) (Conn, error) {
 }
 
 // NewConnWithFiles creates a new Conn from certificate and key in the specified files
-func NewConnWithFiles(gw string, certFile string, keyFile string) (Conn, error) {
+func NewConnWithFilesTimeout(gw string, certFile string, keyFile string, timeout int) (Conn, error) {
 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
 		return Conn{}, err
 	}
 
-	return NewConnWithCert(gw, cert), nil
+	return NewConnWithCertTimeout(gw, cert, timeout), nil
+}
+
+// NewConnWithFiles creates a new Conn from certificate and key in the specified files
+func NewConnWithFiles(gw string, certFile string, keyFile string) (Conn, error) {
+	return NewConnWithFilesTimeout(gw, certFile, keyFile, 0)
 }
 
 // Connect actually creates the TLS connection
@@ -60,12 +71,21 @@ func (c *Conn) Connect() error {
 		c.NetConn.Close()
 	}
 
-	conn, err := net.Dial("tcp", c.gateway)
+	var conn net.Conn
+	var err error
+	if c.timeout > 0 {
+		conn, err = net.DialTimeout("tcp", c.gateway, c.timeout)
+	} else {
+		conn, err = net.Dial("tcp", c.gateway)
+	}
 	if err != nil {
 		return err
 	}
 
 	tlsConn := tls.Client(conn, c.Conf)
+	if c.timeout > 0 {
+		tlsConn.SetDeadline(time.Now().Add(c.timeout * 3))
+	}
 	err = tlsConn.Handshake()
 	if err != nil {
 		return err
@@ -91,5 +111,8 @@ func (c *Conn) Read(p []byte) (int, error) {
 
 // Write writes data from the connection
 func (c *Conn) Write(p []byte) (int, error) {
+	if c.timeout > 0 {
+		c.NetConn.SetWriteDeadline(time.Now().Add(c.timeout))
+	}
 	return c.NetConn.Write(p)
 }

@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"crypto/tls"
 	"fmt"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	"github.com/timehop/apns"
 	"io"
 	"io/ioutil"
 	"log"
@@ -11,9 +14,6 @@ import (
 	"os"
 	"strings"
 	"time"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	"github.com/timehop/apns"
 )
 
 var DummyCert = `-----BEGIN CERTIFICATE-----

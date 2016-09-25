@@ -3,12 +3,12 @@ package apns_test
 import (
 	"bytes"
 	"encoding/binary"
-	"io/ioutil"
-	"os"
-	"time"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/timehop/apns"
+	"io/ioutil"
+	"os"
+	"time"
 )
 
 var _ = Describe("Client", func() {

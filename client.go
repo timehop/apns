@@ -48,10 +48,13 @@ func newClientWithConn(gw string, conn Conn) Client {
 	return c
 }
 
-func NewClientWithCert(gw string, cert tls.Certificate) Client {
-	conn := NewConnWithCert(gw, cert)
-
+func NewClietWithCertTimeout(gw string, cert tls.Certificate, timeout int) Client {
+	conn := NewConnWithCertTimeout(gw, cert, timeout)
 	return newClientWithConn(gw, conn)
+}
+
+func NewClientWithCert(gw string, cert tls.Certificate) Client {
+	return NewClietWithCertTimeout(gw, cert, 0)
 }
 
 func NewClient(gw string, cert string, key string) (Client, error) {
@@ -63,13 +66,17 @@ func NewClient(gw string, cert string, key string) (Client, error) {
 	return newClientWithConn(gw, conn), nil
 }
 
-func NewClientWithFiles(gw string, certFile string, keyFile string) (Client, error) {
-	conn, err := NewConnWithFiles(gw, certFile, keyFile)
+func NewClientWithFilesTimeout(gw string, certFile string, keyFile string, timeout int) (Client, error) {
+	conn, err := NewConnWithFilesTimeout(gw, certFile, keyFile, timeout)
 	if err != nil {
 		return Client{}, err
 	}
 
 	return newClientWithConn(gw, conn), nil
+}
+
+func NewClientWithFiles(gw string, certFile string, keyFile string) (Client, error) {
+	return NewClientWithFilesTimeout(gw, certFile, keyFile, 0)
 }
 
 func (c *Client) Send(n Notification) error {
@@ -132,6 +139,7 @@ func (c *Client) runLoop() {
 		if err != nil {
 			// TODO Probably want to exponentially backoff...
 			time.Sleep(1 * time.Second)
+			log.Println("err connecting to apns ", err.Error())
 			continue
 		}
 
@@ -205,9 +213,11 @@ func readErrs(c *Conn) chan error {
 
 	go func() {
 		p := make([]byte, 6, 6)
+		c.NetConn.SetReadDeadline(time.Time{})
 		_, err := c.Read(p)
 		if err != nil {
 			errs <- err
+			log.Println("read err", err.Error())
 			return
 		}
 
