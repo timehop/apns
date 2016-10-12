@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"net"
 	"strings"
+	"time"
 )
 
 const (
@@ -12,6 +13,8 @@ const (
 
 	ProductionFeedbackGateway = "feedback.push.apple.com:2196"
 	SandboxFeedbackGateway    = "feedback.sandbox.push.apple.com:2196"
+
+	timeout = 10 * time.Second
 )
 
 // Conn is a wrapper for the actual TLS connections made to Apple
@@ -60,18 +63,16 @@ func (c *Conn) Connect() error {
 		c.NetConn.Close()
 	}
 
-	conn, err := net.Dial("tcp", c.gateway)
+	conn, err := net.DialTimeout("tcp", c.gateway, timeout)
 	if err != nil {
 		return err
 	}
 
-	tlsConn := tls.Client(conn, c.Conf)
-	err = tlsConn.Handshake()
-	if err != nil {
-		return err
+	if tcpconn, ok := conn.(*net.TCPConn); ok {
+		tcpconn.SetKeepAlive(true)
 	}
 
-	c.NetConn = tlsConn
+	c.NetConn = tls.Client(conn, c.Conf)
 	return nil
 }
 

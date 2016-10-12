@@ -5,7 +5,16 @@ import (
 	"crypto/tls"
 	"io"
 	"log"
+	"sync/atomic"
 	"time"
+)
+
+const (
+	connectionMaxWaitSeconds = 300
+)
+
+var (
+	atomicId int32 = 0
 )
 
 type buffer struct {
@@ -30,17 +39,18 @@ func (b *buffer) Add(v interface{}) *list.Element {
 type Client struct {
 	Conn         *Conn
 	FailedNotifs chan NotificationResult
-
-	notifs chan Notification
-	id     uint32
+	notifs       chan Notification
+	id           uint32
+	clientId     int32
 }
 
 func newClientWithConn(gw string, conn Conn) Client {
 	c := Client{
 		Conn:         &conn,
 		FailedNotifs: make(chan NotificationResult),
-		id:           uint32(1),
 		notifs:       make(chan Notification),
+		id:           uint32(1),
+		clientId:     atomic.AddInt32(&atomicId, 1),
 	}
 
 	go c.runLoop()
@@ -70,6 +80,10 @@ func NewClientWithFiles(gw string, certFile string, keyFile string) (Client, err
 	}
 
 	return newClientWithConn(gw, conn), nil
+}
+
+func (c *Client) GetId() int32 {
+	return c.clientId
 }
 
 func (c *Client) Send(n Notification) error {
@@ -111,8 +125,8 @@ func (c *Client) handleError(err *Error, buffer *buffer) *list.Element {
 			go c.reportFailedPush(cursor.Value, err)
 
 			next := cursor.Next()
-
 			buffer.Remove(cursor)
+
 			return next
 		}
 
@@ -125,14 +139,16 @@ func (c *Client) handleError(err *Error, buffer *buffer) *list.Element {
 func (c *Client) runLoop() {
 	sent := newBuffer(50)
 	cursor := sent.Front()
+	numSent := uint64(0)
 
 	// APNS connection
 	for {
 		err := c.Conn.Connect()
 		if err != nil {
-			// TODO Probably want to exponentially backoff...
-			time.Sleep(1 * time.Second)
+			time.Sleep(time.Second)
 			continue
+		} else {
+			numSent = 0
 		}
 
 		// Start reading errors from APNS
@@ -145,29 +161,24 @@ func (c *Client) runLoop() {
 			var err error
 			var n Notification
 
-			// Check for notifications or errors. There is a chance we'll send notifications
-			// if we already have an error since `select` will "pseudorandomly" choose a
-			// ready channels. It turns out to be fine because the connection will already
-			// be closed and it'll requeue. We could check before we get to this select
-			// block, but it doesn't seem worth the extra code and complexity.
 			select {
 			case err = <-errs:
 			case n = <-c.notifs:
+				numSent++
 			}
 
 			// If there is an error we understand, find the notification that failed,
 			// move the cursor right after it.
 			if nErr, ok := err.(*Error); ok {
+				log.Println("Known error:", err)
 				cursor = c.handleError(nErr, sent)
 				break
 			}
 
 			if err != nil {
+				log.Println("Error on apns connection:", err)
 				break
 			}
-
-			// Add to list
-			cursor = sent.Add(n)
 
 			// Set identifier if not specified
 			if n.Identifier == 0 {
@@ -177,21 +188,27 @@ func (c *Client) runLoop() {
 				c.id = n.Identifier + 1
 			}
 
+			// Add to list
+			cursor = sent.Add(n)
+
 			b, err := n.ToBinary()
 			if err != nil {
-				// TODO
+				log.Println("Error on converting notification to binary, error:", err)
 				continue
 			}
 
-			_, err = c.Conn.Write(b)
+			log.Printf("Sending #%d notification (id: %s) in #%d connection\n", numSent, n.ID, c.clientId)
 
+			written, err := c.Conn.Write(b)
 			if err == io.EOF {
-				log.Println("EOF trying to write notification")
+				log.Printf("EOF trying to write notification in #%d connection\n", c.clientId)
 				break
-			}
-
-			if err != nil {
-				log.Println("err writing to apns", err.Error())
+			} else if err != nil {
+				log.Printf("Error writing to apns %s in #%d connection", err.Error(), c.clientId)
+				break
+			} else if written < len(b) {
+				log.Printf("Error: partial notification was written in #%d connection, notification id: %s\n",
+					c.clientId, n.ID)
 				break
 			}
 
@@ -205,14 +222,13 @@ func readErrs(c *Conn) chan error {
 
 	go func() {
 		p := make([]byte, 6, 6)
-		_, err := c.Read(p)
-		if err != nil {
+		n, err := c.Read(p)
+		if n > 0 {
+			e := NewError(p)
+			errs <- &e
+		} else if err != nil {
 			errs <- err
-			return
 		}
-
-		e := NewError(p)
-		errs <- &e
 	}()
 
 	return errs
