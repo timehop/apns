@@ -16,6 +16,10 @@ const (
 )
 
 const (
+	validDeviceTokenLength = 64
+)
+
+const (
 	commandID = 2
 
 	// Items IDs
@@ -144,6 +148,10 @@ func NewPayload() *Payload {
 
 func (n Notification) ToBinary() ([]byte, error) {
 	b := []byte{}
+
+	if len(n.DeviceToken) != validDeviceTokenLength {
+		return b, errors.New(ErrInvalidToken)
+	}
 
 	binTok, err := hex.DecodeString(n.DeviceToken)
 	if err != nil {

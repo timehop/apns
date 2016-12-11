@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"io"
 	"log"
+	"sync"
 	"time"
 )
 
@@ -27,20 +28,29 @@ func (b *buffer) Add(v interface{}) *list.Element {
 	return e
 }
 
+type serializedNotif struct {
+	id uint32
+	b  []byte
+	n  *Notification
+}
+
 type Client struct {
 	Conn         *Conn
 	FailedNotifs chan NotificationResult
 
-	notifs chan Notification
-	id     uint32
+	notifs chan serializedNotif
+
+	id  uint32
+	idm sync.Mutex
 }
 
 func newClientWithConn(gw string, conn Conn) Client {
 	c := Client{
 		Conn:         &conn,
 		FailedNotifs: make(chan NotificationResult),
-		id:           uint32(1),
-		notifs:       make(chan Notification),
+		notifs:       make(chan serializedNotif),
+		id:           1,
+		idm:          sync.Mutex{},
 	}
 
 	go c.runLoop()
@@ -73,18 +83,40 @@ func NewClientWithFiles(gw string, certFile string, keyFile string) (Client, err
 }
 
 func (c *Client) Send(n Notification) error {
-	c.notifs <- n
+	// Set identifier if not specified
+	if n.Identifier == 0 {
+		n.Identifier = c.nextID()
+	} else if c.id < n.Identifier {
+		c.setID(n.Identifier)
+	}
+
+	b, err := n.ToBinary()
+	if err != nil {
+		return err
+	}
+
+	c.notifs <- serializedNotif{b: b, id: n.Identifier, n: &n}
 	return nil
 }
 
-func (c *Client) reportFailedPush(v interface{}, err *Error) {
-	failedNotif, ok := v.(Notification)
-	if !ok || v == nil {
-		return
-	}
+func (c *Client) setID(n uint32) {
+	c.idm.Lock()
+	defer c.idm.Unlock()
 
+	c.id = n
+}
+
+func (c *Client) nextID() uint32 {
+	c.idm.Lock()
+	defer c.idm.Unlock()
+
+	c.id++
+	return c.id
+}
+
+func (c *Client) reportFailedPush(s serializedNotif, err *Error) {
 	select {
-	case c.FailedNotifs <- NotificationResult{Notif: failedNotif, Err: *err}:
+	case c.FailedNotifs <- NotificationResult{Notif: *s.n, Err: *err}:
 	default:
 	}
 }
@@ -93,7 +125,7 @@ func (c *Client) requeue(cursor *list.Element) {
 	// If `cursor` is not nil, this means there are notifications that
 	// need to be delivered (or redelivered)
 	for ; cursor != nil; cursor = cursor.Next() {
-		if n, ok := cursor.Value.(Notification); ok {
+		if n, ok := cursor.Value.(serializedNotif); ok {
 			go func() { c.notifs <- n }()
 		}
 	}
@@ -103,12 +135,12 @@ func (c *Client) handleError(err *Error, buffer *buffer) *list.Element {
 	cursor := buffer.Back()
 
 	for cursor != nil {
-		// Get notification
-		n, _ := cursor.Value.(Notification)
+		// Get serialized notification
+		n, _ := cursor.Value.(serializedNotif)
 
 		// If the notification, move cursor after the trouble notification
-		if n.Identifier == err.Identifier {
-			go c.reportFailedPush(cursor.Value, err)
+		if n.id == err.Identifier {
+			go c.reportFailedPush(n, err)
 
 			next := cursor.Next()
 
@@ -143,7 +175,7 @@ func (c *Client) runLoop() {
 		// Connection open, listen for notifs and errors
 		for {
 			var err error
-			var n Notification
+			var n serializedNotif
 
 			// Check for notifications or errors. There is a chance we'll send notifications
 			// if we already have an error since `select` will "pseudorandomly" choose a
@@ -169,21 +201,7 @@ func (c *Client) runLoop() {
 			// Add to list
 			cursor = sent.Add(n)
 
-			// Set identifier if not specified
-			if n.Identifier == 0 {
-				n.Identifier = c.id
-				c.id++
-			} else if c.id < n.Identifier {
-				c.id = n.Identifier + 1
-			}
-
-			b, err := n.ToBinary()
-			if err != nil {
-				// TODO
-				continue
-			}
-
-			_, err = c.Conn.Write(b)
+			_, err = c.Conn.Write(n.b)
 
 			if err == io.EOF {
 				log.Println("EOF trying to write notification")
