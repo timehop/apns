@@ -2,8 +2,10 @@ package apns
 
 import (
 	"crypto/tls"
+	"io"
 	"net"
 	"strings"
+	"time"
 )
 
 const (
@@ -15,9 +17,16 @@ const (
 )
 
 // Conn is a wrapper for the actual TLS connections made to Apple
-type Conn struct {
-	NetConn net.Conn
-	Conf    *tls.Config
+type Conn interface {
+	io.ReadWriteCloser
+
+	Connect() error
+	ReadWithTimeout(p []byte, deadline time.Time) (int, error)
+}
+
+type conn struct {
+	netConn net.Conn
+	tls     *tls.Config
 
 	gateway   string
 	connected bool
@@ -25,19 +34,20 @@ type Conn struct {
 
 func NewConnWithCert(gw string, cert tls.Certificate) Conn {
 	gatewayParts := strings.Split(gw, ":")
-	conf := tls.Config{
-		Certificates: []tls.Certificate{cert},
-		ServerName:   gatewayParts[0],
+	tls := tls.Config{
+		Certificates:       []tls.Certificate{cert},
+		ServerName:         gatewayParts[0],
+		InsecureSkipVerify: true,
 	}
 
-	return Conn{gateway: gw, Conf: &conf}
+	return &conn{gateway: gw, tls: &tls}
 }
 
 // NewConnWithFiles creates a new Conn from certificate and key in the specified files
 func NewConn(gw string, crt string, key string) (Conn, error) {
 	cert, err := tls.X509KeyPair([]byte(crt), []byte(key))
 	if err != nil {
-		return Conn{}, err
+		return &conn{}, err
 	}
 
 	return NewConnWithCert(gw, cert), nil
@@ -47,49 +57,49 @@ func NewConn(gw string, crt string, key string) (Conn, error) {
 func NewConnWithFiles(gw string, certFile string, keyFile string) (Conn, error) {
 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
-		return Conn{}, err
+		return &conn{}, err
 	}
 
 	return NewConnWithCert(gw, cert), nil
 }
 
 // Connect actually creates the TLS connection
-func (c *Conn) Connect() error {
+func (c *conn) Connect() error {
 	// Make sure the existing connection is closed
-	if c.NetConn != nil {
-		c.NetConn.Close()
+	if c.netConn != nil {
+		c.netConn.Close()
 	}
 
-	conn, err := net.Dial("tcp", c.gateway)
+	tlsConn, err := tls.Dial("tcp", c.gateway, c.tls)
 	if err != nil {
 		return err
 	}
 
-	tlsConn := tls.Client(conn, c.Conf)
-	err = tlsConn.Handshake()
-	if err != nil {
-		return err
-	}
-
-	c.NetConn = tlsConn
+	c.netConn = tlsConn
 	return nil
 }
 
-func (c *Conn) Close() error {
-	if c.NetConn != nil {
-		return c.NetConn.Close()
+func (c *conn) Close() error {
+	if c.netConn != nil {
+		return c.netConn.Close()
 	}
 
 	return nil
 }
 
 // Read reads data from the connection
-func (c *Conn) Read(p []byte) (int, error) {
-	i, err := c.NetConn.Read(p)
-	return i, err
+func (c *conn) Read(p []byte) (int, error) {
+	return c.netConn.Read(p)
+}
+
+// ReadWithTimeout reads data from the connection and returns an error
+// after duration
+func (c *conn) ReadWithTimeout(p []byte, deadline time.Time) (int, error) {
+	c.netConn.SetReadDeadline(deadline)
+	return c.netConn.Read(p)
 }
 
 // Write writes data from the connection
-func (c *Conn) Write(p []byte) (int, error) {
-	return c.NetConn.Write(p)
+func (c *conn) Write(p []byte) (int, error) {
+	return c.netConn.Write(p)
 }

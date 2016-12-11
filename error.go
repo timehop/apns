@@ -3,6 +3,11 @@ package apns
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
+)
+
+var (
+	ErrDisconnected = errors.New("disconnected from gateway")
 )
 
 const (

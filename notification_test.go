@@ -203,7 +203,20 @@ var _ = Describe("Notifications", func() {
 		Describe("#ToBinary", func() {
 			Context("invalid token format", func() {
 				n := apns.NewNotification()
-				n.DeviceToken = "totally not a valid token"
+				n.DeviceToken = "totally not a valid token length"
+
+				It("should return an error", func() {
+					_, err := n.ToBinary()
+					Expect(err).NotTo(BeNil())
+					Expect(err.Error()).To(Equal(apns.ErrInvalidToken))
+				})
+
+				// Expect(err.Error()).To(ContainSubstring("convert token to hex error"))
+			})
+
+			Context("non-convertable token", func() {
+				n := apns.NewNotification()
+				n.DeviceToken = "123456789012345678901234567890zz123456789012345678901234567890zz"
 
 				It("should return an error", func() {
 					_, err := n.ToBinary()
