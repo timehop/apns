@@ -33,7 +33,7 @@ func NewConnWithCert(gw string, cert tls.Certificate) Conn {
 	return Conn{gateway: gw, Conf: &conf}
 }
 
-// NewConnWithFiles creates a new Conn from certificate and key in the specified files
+// NewConn creates a new Conn from certificate and key in the specified files
 func NewConn(gw string, crt string, key string) (Conn, error) {
 	cert, err := tls.X509KeyPair([]byte(crt), []byte(key))
 	if err != nil {
